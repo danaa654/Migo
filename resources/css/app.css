@@ -1,0 +1,193 @@
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+    --font-sans:
+        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Migo palette (values live in :root / .dark below) */
+    --color-m-page: var(--m-page);
+    --color-m-page2: var(--m-page2);
+    --color-m-card: var(--m-card);
+    --color-m-soft: var(--m-soft);
+    --color-m-line: var(--m-line);
+    --color-m-line2: var(--m-line2);
+    --color-m-ink: var(--m-ink);
+    --color-m-body: var(--m-body);
+    --color-m-body2: var(--m-body2);
+    --color-m-muted: var(--m-muted);
+    --color-m-faint: var(--m-faint);
+    --color-m-mint: var(--m-mint);
+    --color-m-forest: var(--m-forest);
+    --color-m-forest-hover: var(--m-forest-hover);
+    --color-m-accent: var(--m-accent);
+    --color-m-accent-hover: var(--m-accent-hover);
+    --color-m-solid: var(--m-solid);
+    --color-m-deep: var(--m-deep);
+    --color-m-red: var(--m-red);
+    --color-m-redtext: var(--m-redtext);
+    --color-m-green: var(--m-green);
+    --color-m-greentext: var(--m-greentext);
+    --color-m-amber: var(--m-amber);
+    --color-m-purple: var(--m-purple);
+}
+
+:root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.39 0.07 165); /* Migo forest green */
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.87 0 0);
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.39 0.07 165);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.87 0 0);
+
+    /* Migo palette, light */
+    --m-page: #F6F1E4; --m-page2: #FBF8EF; --m-card: #FFFFFF; --m-soft: #EFE9D8;
+    --m-line: #E3DCC8; --m-line2: #C9C1A9;
+    --m-ink: #1A2B24; --m-body: #232826; --m-body2: #3C463F; --m-muted: #5F675D; --m-faint: #9A9F95;
+    --m-mint: #E4EEE7; --m-forest: #1B5240; --m-forest-hover: #143D30;
+    --m-accent: #1B5240; --m-accent-hover: #143D30;
+    --m-solid: #1A2B24; --m-deep: #0F2F25; --m-pin: #1A2B24;
+    --m-red: #DC2626; --m-redtext: #B91C1C; --m-green: #16A36A; --m-greentext: #117A50;
+    --m-amber: #92400E; --m-purple: #6D28D9;
+}
+
+.dark {
+    /* Migo palette, dark */
+    --m-page: #0E1613; --m-page2: #111B17; --m-card: #16211C; --m-soft: #1D2A24;
+    --m-line: #2A3932; --m-line2: #3A4B43;
+    --m-ink: #E9F1EC; --m-body: #D5E0D9; --m-body2: #B7C5BD; --m-muted: #8FA198; --m-faint: #6A7A72;
+    --m-mint: #1D3A2F; --m-forest: #2A7F5E; --m-forest-hover: #339470;
+    --m-accent: #5FD3A0; --m-accent-hover: #86E3BC;
+    --m-solid: #33463D; --m-deep: #08100D; --m-pin: #070C0A;
+    --m-red: #F87171; --m-redtext: #F87171; --m-green: #4ADE9B; --m-greentext: #4ADE9B;
+    --m-amber: #FBBF24; --m-purple: #A78BFA;
+    --background: var(--m-page);
+    --foreground: var(--m-body);
+    --card: var(--m-card);
+    --card-foreground: var(--m-body);
+    --popover: var(--m-card);
+    --popover-foreground: var(--m-body);
+    --primary: var(--m-forest);
+    --primary-foreground: #FFFFFF;
+    --secondary: var(--m-soft);
+    --secondary-foreground: var(--m-body);
+    --muted: var(--m-soft);
+    --muted-foreground: var(--m-muted);
+    --accent: var(--m-mint);
+    --accent-foreground: var(--m-body);
+    --destructive: #B91C1C;
+    --destructive-foreground: #F87171;
+    --border: var(--m-line);
+    --input: var(--m-line);
+    --ring: var(--m-line2);
+    --chart-1: oklch(0.696 0.17 162.48);
+    --chart-2: oklch(0.769 0.188 70.08);
+    --chart-3: oklch(0.488 0.243 264.376);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+    --sidebar: var(--m-card);
+    --sidebar-foreground: var(--m-body);
+    --sidebar-primary: var(--m-forest);
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: var(--m-mint);
+    --sidebar-accent-foreground: var(--m-body);
+    --sidebar-border: var(--m-line);
+    --sidebar-ring: var(--m-line2);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+/* Dark map tiles: invert the light OpenStreetMap tiles so maps match the dark theme. */
+.dark .leaflet-tile-pane {
+    filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}
