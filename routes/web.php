@@ -9,6 +9,7 @@ use App\Http\Controllers\BikerAccreditationController;
 use App\Http\Controllers\BikerDashboardController;
 use App\Http\Controllers\BikerServiceRequestController;
 use App\Http\Controllers\CustomerAuth\CustomerPhoneController;
+use App\Http\Controllers\CustomerAuth\EmailOtpController;
 use App\Http\Controllers\CustomerAuth\GoogleController;
 use App\Http\Controllers\CustomerAuth\PhoneOtpController;
 use App\Http\Controllers\CustomerBookingController;
@@ -44,13 +45,15 @@ Route::middleware('guest')->get('admin/login', fn (Request $request) => Inertia:
     'status' => $request->session()->get('status'),
 ]))->name('admin.login');
 
-// Customer sign-in (no registration form): Google OAuth or phone number + SMS one-time code. The first successful
+// Customer sign-in (no registration form): Google OAuth, phone number + SMS one-time code, or email + emailed one-time code. The first successful
 // sign-in creates the customer account; the role is fixed on the server. Riders and admins keep email + password.
 Route::middleware('guest')->prefix('auth')->group(function () {
     Route::get('google/redirect', [GoogleController::class, 'redirect'])->middleware('throttle:20,1')->name('auth.google.redirect');
     Route::get('google/callback', [GoogleController::class, 'callback'])->middleware('throttle:20,1')->name('auth.google.callback');
     Route::post('otp/send', [PhoneOtpController::class, 'send'])->middleware('throttle:30,1')->name('auth.otp.send');
     Route::post('otp/verify', [PhoneOtpController::class, 'verify'])->middleware('throttle:20,1')->name('auth.otp.verify');
+    Route::post('email-otp/send', [EmailOtpController::class, 'send'])->middleware('throttle:30,1')->name('auth.email-otp.send');
+    Route::post('email-otp/verify', [EmailOtpController::class, 'verify'])->middleware('throttle:20,1')->name('auth.email-otp.verify');
 });
 
 // Registration is for riders/drivers only. There is deliberately no administrator registration and no customer

@@ -1,4 +1,6 @@
 import { Link } from '@inertiajs/react';
+import { useState } from 'react';
+import EmailOtpFlow from '@/components/email-otp-flow';
 import PhoneOtpFlow from '@/components/phone-otp-flow';
 
 function GoogleG() {
@@ -24,15 +26,17 @@ function GoogleG() {
     );
 }
 
-/** Customers: Google or phone number + SMS code. There is no registration form; the account is created on first sign-in. */
+/** Customers: Google, phone number + SMS code, or email + emailed code. There is no registration form; the account is created on first sign-in. */
 export default function MigoCustomerLogin({
     showGuest = true,
 }: {
     /** Hide the "Continue as guest" link when this form is already shown inside the booking page. */
     showGuest?: boolean;
 }) {
+    const [method, setMethod] = useState<'phone' | 'email'>('phone');
+
     return (
-        <div className="space-y-4">
+        <div className="w-full max-w-full min-w-0 space-y-4">
             {/* A normal link (full page load): the browser leaves for Google and comes back to /auth/google/callback. */}
             <a
                 href="/auth/google/redirect"
@@ -51,15 +55,41 @@ export default function MigoCustomerLogin({
                 <span aria-hidden className="h-px flex-1 bg-m-line" />
             </div>
 
-            <PhoneOtpFlow
-                sendUrl="/auth/otp/send"
-                verifyUrl="/auth/otp/verify"
-                onVerified={(data) =>
-                    window.location.assign(
-                        data.redirect ?? '/customer/dashboard',
-                    )
-                }
-            />
+            {method === 'phone' ? (
+                <PhoneOtpFlow
+                    sendUrl="/auth/otp/send"
+                    verifyUrl="/auth/otp/verify"
+                    onVerified={(data) =>
+                        window.location.assign(
+                            data.redirect ?? '/customer/dashboard',
+                        )
+                    }
+                />
+            ) : (
+                <EmailOtpFlow
+                    sendUrl="/auth/email-otp/send"
+                    verifyUrl="/auth/email-otp/verify"
+                    onVerified={(data) =>
+                        window.location.assign(
+                            data.redirect ?? '/customer/dashboard',
+                        )
+                    }
+                />
+            )}
+
+            <p className="text-center">
+                <button
+                    type="button"
+                    onClick={() =>
+                        setMethod(method === 'phone' ? 'email' : 'phone')
+                    }
+                    className="text-sm font-semibold text-m-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-m-accent"
+                >
+                    {method === 'phone'
+                        ? 'Gamitin na lang ang email'
+                        : 'Gamitin na lang ang phone number'}
+                </button>
+            </p>
 
             <p className="border-t border-m-line pt-4 text-center text-xs leading-relaxed text-m-muted">
                 Walang registration form: awtomatikong magagawa ang account mo

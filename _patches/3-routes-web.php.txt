@@ -1,0 +1,7 @@
+// ===== routes/web.php =====
+// (A) Add to the use-list at the top:
+use App\Http\Controllers\CustomerAuth\EmailOtpController;
+
+// (B) Add inside the existing Route::middleware('guest')->prefix('auth')->group(...) block, next to the phone OTP routes:
+    Route::post('email-otp/send', [EmailOtpController::class, 'send'])->middleware('throttle:30,1')->name('auth.email-otp.send');
+    Route::post('email-otp/verify', [EmailOtpController::class, 'verify'])->middleware('throttle:20,1')->name('auth.email-otp.verify');

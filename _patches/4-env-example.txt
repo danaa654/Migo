@@ -1,0 +1,9 @@
+# .env  (Gmail SMTP, use your App Password, no spaces)
+MAIL_MAILER=smtp
+MAIL_SCHEME=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=youraccount@gmail.com
+MAIL_PASSWORD=your16charapppassword
+MAIL_FROM_ADDRESS=youraccount@gmail.com
+MAIL_FROM_NAME="Migo"

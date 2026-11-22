@@ -1,0 +1,19 @@
+// ===== app/Models/User.php =====
+// (A) Add this line to the @property docblock:
+//  * @property bool $has_password
+
+// (B) Add 'has_password' => 'boolean' to casts():
+            'has_password' => 'boolean',
+
+// (C) Replace canChangePassword() with:
+
+    /** Only accounts with a real, user-chosen password can change it. */
+    public function canChangePassword(): bool
+    {
+        return $this->email !== null && $this->google_id === null && $this->has_password;
+    }
+
+// (D) In signInMethods(), add before the 'password' check:
+        if ($this->email && $this->email_verified_at && ! $this->has_password && ! $this->google_id) {
+            $methods[] = 'email';
+        }

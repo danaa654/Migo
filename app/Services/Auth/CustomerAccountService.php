@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Finds, links or creates the CUSTOMER account behind a Google or phone sign-in.
+ * Finds, links or creates the CUSTOMER account behind a Google, phone or email sign-in.
  *
  * Rules that always hold:
  *  - the role is set here, on the server, to "customer"; it is never read from the request;
@@ -63,6 +63,40 @@ class CustomerAccountService
                 $legacy->update(['user_id' => $user->id]);
             } else {
                 Passenger::create(['user_id' => $user->id, 'full_name' => $user->name, 'email' => $email, 'phone' => '', 'account_status' => 'active']);
+            }
+
+            return $user;
+        }));
+    }
+
+    /** @param  string  $email  lower-cased, already verified by an emailed OTP */
+    public function signInWithEmail(string $email): User
+    {
+        $email = Str::lower(trim($email));
+
+        return $this->retryOnce(fn () => DB::transaction(function () use ($email) {
+            $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+            if ($user) {
+                $this->assertCustomer($user, self::RIDER_EMAIL_MESSAGE);
+                $user->forceFill(['email_verified_at' => $user->email_verified_at ?? now()])->save();
+                $this->ensurePassenger($user);
+
+                return $user;
+            }
+
+            // A rider application that has no login yet must still never become a customer.
+            if (Rider::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                throw new CustomerSignInException(self::RIDER_EMAIL_MESSAGE);
+            }
+
+            $user = $this->newCustomer(['name' => '', 'email' => $email, 'email_verified_at' => now()]);
+
+            // A legacy passengers row with this email and no login is linked instead of duplicated.
+            $legacy = Passenger::whereRaw('LOWER(email) = ?', [$email])->whereNull('user_id')->first();
+            if ($legacy) {
+                $legacy->update(['user_id' => $user->id]);
+            } else {
+                Passenger::create(['user_id' => $user->id, 'full_name' => '', 'email' => $email, 'phone' => '', 'account_status' => 'active']);
             }
 
             return $user;
@@ -161,6 +195,7 @@ class CustomerAccountService
             'phone' => $attributes['phone'] ?? null,
             'phone_verified_at' => $attributes['phone_verified_at'] ?? null,
             'email_verified_at' => $attributes['email_verified_at'] ?? null,
+            'has_password' => false, // every customer made here is passwordless (random unusable password)
         ])->save();
 
         return $user;

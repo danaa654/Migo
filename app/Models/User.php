@@ -27,6 +27,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $phone_verified_at
  * @property Carbon|null $email_verified_at
  * @property string $password
+ * @property bool $has_password
  * @property AccountRole|null $role
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
@@ -58,6 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'email_verified_at' => 'datetime',
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
+            'has_password' => 'boolean',
             'role' => AccountRole::class,
             'two_factor_confirmed_at' => 'datetime',
         ];
@@ -129,6 +131,9 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         if ($this->phone && $this->phone_verified_at) {
             $methods[] = 'phone';
         }
+        if ($this->email && $this->email_verified_at && ! $this->has_password && ! $this->google_id) {
+            $methods[] = 'email';
+        }
         if ($this->canChangePassword()) {
             $methods[] = 'password';
         }
@@ -136,9 +141,9 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $methods;
     }
 
-    /** Only accounts with a real, user-chosen password can change it: those have an email and never used Google sign-up. */
+    /** Only accounts with a real, user-chosen password can change it. */
     public function canChangePassword(): bool
     {
-        return $this->email !== null && $this->google_id === null;
+        return $this->email !== null && $this->google_id === null && $this->has_password;
     }
 }
