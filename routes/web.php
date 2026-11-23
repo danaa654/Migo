@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DispatchMonitorController;
 use App\Http\Controllers\Admin\DispatchSettingsController;
+use App\Http\Controllers\Admin\PassengerManagementController;
 use App\Http\Controllers\Admin\RiderAccreditationController;
 use App\Http\Controllers\Admin\RiderManagementController;
 use App\Http\Controllers\Admin\StaffAccountController;
@@ -165,6 +166,17 @@ Route::middleware(['auth', EnsureActiveAdmin::class])->prefix('admin')->group(fu
         });
     });
 
+    // Passenger Management: Administrator and Support Staff can read; only the Administrator can change a status.
+    Route::prefix('passengers')->middleware('admin.area:passengers')->name('admin.passengers.')->group(function () {
+        Route::get('/', [PassengerManagementController::class, 'index'])->name('index');
+        Route::get('{passenger}', [PassengerManagementController::class, 'show'])->name('show');
+        Route::middleware(['admin.area:passengers_manage', 'throttle:20,1'])->group(function () {
+            Route::post('{passenger}/suspend', [PassengerManagementController::class, 'suspend'])->name('suspend');
+            Route::post('{passenger}/deactivate', [PassengerManagementController::class, 'deactivate'])->name('deactivate');
+            Route::post('{passenger}/reactivate', [PassengerManagementController::class, 'reactivate'])->name('reactivate');
+        });
+    });
+
     // Booking Management = live dispatch monitor. Admins can watch everything and cancel / restart a search, but they
     // can never assign a rider: assignment only happens when a rider accepts (DispatchService::accept).
     Route::prefix('bookings')->middleware('admin.area:bookings')->name('admin.bookings.')->group(function () {
@@ -191,7 +203,6 @@ Route::middleware(['auth', EnsureActiveAdmin::class])->prefix('admin')->group(fu
     // Modules built in later phases render a placeholder inside the admin layout. Each one is tied to an area
     // (see AdminProfile::AREAS): Operations Admin get subscriptions; Support Staff get tickets, complaints and incidents.
     foreach ([
-        'passengers' => ['Passenger Management', 'passengers'],
         'subscriptions' => ['Subscription Management', 'subscriptions'],
         'complaints' => ['Complaint Management', 'support'],
         'complaints/{complaint}' => ['Complaint Review', 'support'],

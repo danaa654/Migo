@@ -118,6 +118,9 @@ class TripService
     {
         return DB::transaction(function () use ($bookingId, $passenger, $userId) {
             $p = Passenger::whereKey($passenger->id)->lockForUpdate()->firstOrFail();
+            if ($p->account_status !== 'active') {
+                return $this->fail('account_blocked', 'Your account cannot book rides right now.');
+            }
             $b = Booking::whereKey($bookingId)->where('passenger_id', $p->id)->lockForUpdate()->first();
             if (! $b || $b->booking_status !== 'no_rider_found') {
                 return $this->fail('invalid_state', 'This booking cannot be searched again.');

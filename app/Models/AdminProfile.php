@@ -33,13 +33,15 @@ class AdminProfile extends Model
      *  - subscriptions:  subscription management
      *  - bookings:       live booking / dispatch monitor
      *  - support:        tickets, complaints, incident reports
+     *  - passengers:     passenger list and details (read-only; Support Staff have this one only)
+     *  - passengers_manage: suspend / deactivate / reactivate a passenger (Administrator only)
      *  - staff:          creating and suspending Operations Admin / Support Staff accounts (Administrator only)
      */
     private const AREAS = [
-        self::ROLE_SUPER_ADMIN => ['dashboard', 'riders', 'subscriptions', 'bookings', 'passengers', 'support', 'reports', 'notifications', 'settings', 'staff'],
-        self::ROLE_ADMIN => ['dashboard', 'riders', 'subscriptions', 'bookings', 'passengers', 'support', 'reports', 'notifications', 'settings'],
+        self::ROLE_SUPER_ADMIN => ['dashboard', 'riders', 'subscriptions', 'bookings', 'passengers', 'passengers_manage', 'support', 'reports', 'notifications', 'settings', 'staff'],
+        self::ROLE_ADMIN => ['dashboard', 'riders', 'subscriptions', 'bookings', 'passengers', 'passengers_manage', 'support', 'reports', 'notifications', 'settings'],
         self::ROLE_OPERATIONS => ['dashboard', 'riders', 'subscriptions', 'bookings', 'notifications'],
-        self::ROLE_SUPPORT => ['support'],
+        self::ROLE_SUPPORT => ['support', 'passengers'],
     ];
 
     private const LABELS = [
