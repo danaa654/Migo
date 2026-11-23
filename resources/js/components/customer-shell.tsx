@@ -108,7 +108,7 @@ function SidebarShell({ title, status, wide = false, children }: ShellProps) {
                     inert={collapsed || undefined}
                 >
                     <img
-                        src="/img/sidebar-P.webp"
+                        src="/img/sidebar-P.png"
                         alt=""
                         aria-hidden
                         draggable={false}

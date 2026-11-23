@@ -98,12 +98,23 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 
         return $this->accountRole() === AccountRole::Admin
             && $profile?->isActive() === true
-            && in_array($profile->role, ['admin', 'super_admin'], true);
+            && in_array($profile->role, AdminProfile::ROLES, true);
+    }
+
+    /** An active staff member who may open one admin-portal area (riders, bookings, support, staff ...). */
+    public function canAccessAdminArea(string $area): bool
+    {
+        return $this->isActiveAdmin() && $this->adminProfile->hasArea($area);
     }
 
     /** Where this user's dashboard lives, decided entirely by the stored role. */
     public function dashboardPath(): string
     {
+        // Staff land on the first area their admin role allows (Support Staff have no dashboard).
+        if ($this->accountRole() === AccountRole::Admin && $this->adminProfile) {
+            return $this->adminProfile->homePath();
+        }
+
         return $this->accountRole()->dashboardPath();
     }
 

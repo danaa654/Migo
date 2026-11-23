@@ -132,7 +132,7 @@ class RiderManagementController extends Controller
             'history' => $history,
             'accreditation' => $accreditation->summary($rider),
             'staff' => AdminProfile::query()->where('status', 'active')->orderBy('full_name')->get(['id', 'full_name', 'role'])
-                ->filter(fn ($p) => $p->user?->isActiveAdmin())->values(),
+                ->filter(fn ($p) => $p->user?->canAccessAdminArea('riders'))->values(),
             'currentStaffId' => request()->user()->adminProfile?->id,
             'requiredEquipment' => RiderAccreditation::REQUIRED_EQUIPMENT,
             'requiredDocuments' => RiderAccreditation::REQUIRED_DOCUMENTS,

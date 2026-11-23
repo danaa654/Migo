@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureAdminArea;
 use App\Http\Middleware\EnsureApprovedBiker;
 use App\Http\Middleware\EnsureCustomerProfileComplete;
 use App\Http\Middleware\EnsureRole;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => EnsureRole::class,
+            'admin.area' => EnsureAdminArea::class,
             'biker.approved' => EnsureApprovedBiker::class,
             'customer.profile' => EnsureCustomerProfileComplete::class,
         ]);

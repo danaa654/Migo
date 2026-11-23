@@ -436,7 +436,7 @@ class RiderAccreditation
     private function authorizeStaff(AdminProfile $staff): void
     {
         $user = $staff->user;
-        if (! $staff->isActive() || ! $user || ! $user->isActiveAdmin() || $user->adminProfile?->id !== $staff->id) {
+        if (! $staff->isActive() || ! $user || ! $user->canAccessAdminArea('riders') || $user->adminProfile?->id !== $staff->id) {
             throw new AuthorizationException('Only active administrators or authorized staff can record accreditation activities.');
         }
     }
@@ -444,7 +444,7 @@ class RiderAccreditation
     private function activeStaff(string $adminProfileId, string $label): AdminProfile
     {
         $profile = AdminProfile::query()->find($adminProfileId);
-        if (! $profile || ! $profile->user?->isActiveAdmin()) {
+        if (! $profile || ! $profile->user?->canAccessAdminArea('riders')) {
             throw new AccreditationException("The selected {$label} is not an active staff member.");
         }
 

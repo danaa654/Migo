@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DispatchMonitorController;
 use App\Http\Controllers\Admin\DispatchSettingsController;
 use App\Http\Controllers\Admin\RiderAccreditationController;
 use App\Http\Controllers\Admin\RiderManagementController;
+use App\Http\Controllers\Admin\StaffAccountController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\BikerAccreditationController;
 use App\Http\Controllers\BikerDashboardController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\CustomerDashboardController;
 use App\Http\Controllers\CustomerProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Registration\BikerRegistrationController;
+use App\Http\Controllers\Registration\RiderEmailOtpController;
 use App\Http\Controllers\RiderDispatchController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Middleware\EnsureActiveAdmin;
@@ -64,6 +66,10 @@ Route::middleware('guest')->group(function () {
 
     Route::get('register/biker', [BikerRegistrationController::class, 'create'])->name('register.biker');
     Route::post('register/biker', [BikerRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('register.biker.store');
+
+    // Rider registration: the applicant must prove the email with an emailed code before the form can be submitted.
+    Route::post('register/biker/email-otp/send', [RiderEmailOtpController::class, 'send'])->middleware('throttle:30,1')->name('register.biker.email-otp.send');
+    Route::post('register/biker/email-otp/verify', [RiderEmailOtpController::class, 'verify'])->middleware('throttle:20,1')->name('register.biker.email-otp.verify');
 });
 
 // Public booking page: guests can plan a ride (map, pickup, destination, distance). They sign in only when they
@@ -134,10 +140,10 @@ Route::middleware(['auth', 'role:biker'])->prefix('biker')->group(function () {
 
 // Admin portal (Laravel session auth + MySQL). Every /admin page requires an active administrator.
 Route::middleware(['auth', EnsureActiveAdmin::class])->prefix('admin')->group(function () {
-    Route::get('dashboard', AdminDashboardController::class)->name('admin.dashboard');
+    Route::get('dashboard', AdminDashboardController::class)->middleware('admin.area:dashboard')->name('admin.dashboard');
 
     // Rider Management (administrator-facing label for the existing biker records).
-    Route::prefix('riders')->name('admin.riders.')->group(function () {
+    Route::prefix('riders')->middleware('admin.area:riders')->name('admin.riders.')->group(function () {
         Route::get('/', [RiderManagementController::class, 'index'])->name('index');
         Route::get('{rider}', [RiderManagementController::class, 'show'])->name('show');
         Route::get('{rider}/documents/{type}', [RiderManagementController::class, 'document'])->name('document');
@@ -161,7 +167,7 @@ Route::middleware(['auth', EnsureActiveAdmin::class])->prefix('admin')->group(fu
 
     // Booking Management = live dispatch monitor. Admins can watch everything and cancel / restart a search, but they
     // can never assign a rider: assignment only happens when a rider accepts (DispatchService::accept).
-    Route::prefix('bookings')->name('admin.bookings.')->group(function () {
+    Route::prefix('bookings')->middleware('admin.area:bookings')->name('admin.bookings.')->group(function () {
         Route::get('/', [DispatchMonitorController::class, 'index'])->name('index');
         Route::get('live', [DispatchMonitorController::class, 'live'])->middleware('throttle:90,1')->name('live');
         Route::get('{booking}/history', [DispatchMonitorController::class, 'history'])->middleware('throttle:60,1')->name('history');
@@ -169,19 +175,32 @@ Route::middleware(['auth', EnsureActiveAdmin::class])->prefix('admin')->group(fu
         Route::post('{booking}/retry', [DispatchMonitorController::class, 'retry'])->middleware('throttle:20,1')->name('retry');
     });
 
-    // Admin Settings = dispatch settings. Everyone active can view them; only a super administrator can change them.
-    Route::get('settings', [DispatchSettingsController::class, 'edit'])->name('admin.settings');
-    Route::put('settings', [DispatchSettingsController::class, 'update'])->middleware('throttle:20,1')->name('admin.settings.update');
+    // Staff Accounts: only the Administrator, and only for Operations Admin and Support Staff accounts.
+    Route::prefix('staff')->middleware('admin.area:staff')->name('admin.staff.')->group(function () {
+        Route::get('/', [StaffAccountController::class, 'index'])->name('index');
+        Route::post('/', [StaffAccountController::class, 'store'])->middleware('throttle:20,1')->name('store');
+        Route::post('{staff}/suspend', [StaffAccountController::class, 'suspend'])->middleware('throttle:20,1')->name('suspend');
+        Route::post('{staff}/reactivate', [StaffAccountController::class, 'reactivate'])->middleware('throttle:20,1')->name('reactivate');
+        Route::post('{staff}/invite', [StaffAccountController::class, 'invite'])->middleware('throttle:10,1')->name('invite');
+    });
 
-    // Modules built in later phases render a placeholder inside the admin layout.
+    // Admin Settings = dispatch settings (Administrator only; only a super administrator can change them).
+    Route::get('settings', [DispatchSettingsController::class, 'edit'])->middleware('admin.area:settings')->name('admin.settings');
+    Route::put('settings', [DispatchSettingsController::class, 'update'])->middleware(['admin.area:settings', 'throttle:20,1'])->name('admin.settings.update');
+
+    // Modules built in later phases render a placeholder inside the admin layout. Each one is tied to an area
+    // (see AdminProfile::AREAS): Operations Admin get subscriptions; Support Staff get tickets, complaints and incidents.
     foreach ([
-        'passengers' => 'Passenger Management',
-        'complaints' => 'Complaint Management',
-        'complaints/{complaint}' => 'Complaint Review',
-        'reports' => 'Reports and Analytics',
-        'notifications' => 'Notifications',
-    ] as $path => $title) {
-        Route::inertia($path, 'admin/placeholder', ['title' => $title]);
+        'passengers' => ['Passenger Management', 'passengers'],
+        'subscriptions' => ['Subscription Management', 'subscriptions'],
+        'complaints' => ['Complaint Management', 'support'],
+        'complaints/{complaint}' => ['Complaint Review', 'support'],
+        'tickets' => ['Ticket Management', 'support'],
+        'incidents' => ['Incident Reports', 'support'],
+        'reports' => ['Reports and Analytics', 'reports'],
+        'notifications' => ['Notifications', 'notifications'],
+    ] as $path => [$title, $area]) {
+        Route::inertia($path, 'admin/placeholder', ['title' => $title])->middleware("admin.area:{$area}");
     }
 });
 

@@ -21,13 +21,14 @@ import {
 import { useRef, useState, type FormEvent } from 'react';
 import { Notice } from '@/components/migo-auth-shell';
 import { FileField } from '@/components/migo-form-fields';
+import LivePhotoField from '@/components/live-photo-field';
+import RiderEmailVerify from '@/components/rider-email-verify';
 import {
     IconField,
     PHONE_ERROR,
     PHONE_RE,
     PasswordInput,
     PhoneField,
-    PhotoField,
     RegisterShell,
     Requirements,
     Section,
@@ -109,7 +110,7 @@ function fullNameError(raw: string): string | null {
         : null;
 }
 
-function validateStepOne(d: BikerForm): Errs {
+function validateStepOne(d: BikerForm, emailVerified: boolean): Errs {
     const e: Errs = {};
     if (!d.vehicle_type)
         e.vehicle_type =
@@ -121,6 +122,8 @@ function validateStepOne(d: BikerForm): Errs {
     if (!d.email.trim()) e.email = 'Email address is required.';
     else if (!EMAIL_RE.test(d.email.trim()))
         e.email = 'Enter a valid email address.';
+    else if (!emailVerified)
+        e.email = 'Verify your email: send the code and enter it below.';
     if (!d.address.trim()) e.address = 'Home address is required.';
     return e;
 }
@@ -133,6 +136,13 @@ function validateStepTwo(d: BikerForm): Errs {
         e.license_expiry = 'License expiry date is required.';
     if (!d.motorcycle_plate_number.trim())
         e.motorcycle_plate_number = 'Plate number is required.';
+    if (!d.profile_picture)
+        e.profile_picture =
+            'A profile photo is required. Open the camera and take a clear photo of your face.';
+    else if (d.profile_picture.size > 5 * 1024 * 1024)
+        e.profile_picture = 'The profile photo must not be larger than 5 MB.';
+    else if (!/^image\/(jpeg|png|webp)$/.test(d.profile_picture.type))
+        e.profile_picture = 'The profile photo must be a JPG, PNG or WEBP image.';
     if (!d.license_document)
         e.license_document = "Upload your driver's license (photo or scan).";
     if (!d.registration_document)
@@ -190,6 +200,11 @@ export default function RegisterBiker() {
         document_consent: false,
     });
     const [step, setStep] = useState<1 | 2>(1);
+    // The email address that was proven with the emailed code; editing the email makes the proof stop matching.
+    const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
+    const emailVerified =
+        verifiedEmail !== null &&
+        verifiedEmail === form.data.email.trim().toLowerCase();
     const [clientErrors, setClientErrors] = useState<Errs>({});
     const top = useRef<HTMLDivElement>(null);
     const serverErrors = form.errors as Errs;
@@ -224,7 +239,7 @@ export default function RegisterBiker() {
     }
 
     function next() {
-        const e = validateStepOne(form.data);
+        const e = validateStepOne(form.data, emailVerified);
         setClientErrors(e);
         if (Object.keys(e).length === 0) goTo(2);
     }
@@ -234,7 +249,7 @@ export default function RegisterBiker() {
         if (off) return;
         if (step === 1) return next();
         const bad = {
-            ...validateStepOne(form.data),
+            ...validateStepOne(form.data, emailVerified),
             ...validateStepTwo(form.data),
         };
         setClientErrors(bad);
@@ -246,6 +261,8 @@ export default function RegisterBiker() {
             forceFormData: true,
             onError: (errors) => {
                 form.reset('password', 'password_confirmation');
+                if (errors.email?.toLowerCase().includes('verify'))
+                    setVerifiedEmail(null);
                 if (STEP_ONE.some((k) => errors[k])) goTo(1);
             },
         });
@@ -415,6 +432,12 @@ export default function RegisterBiker() {
                                 placeholder="you@example.com"
                                 disabled={off}
                             />
+                            <RiderEmailVerify
+                                email={form.data.email}
+                                verified={emailVerified}
+                                disabled={off}
+                                onVerified={setVerifiedEmail}
+                            />
                             <IconField
                                 id="address"
                                 label="Home Address"
@@ -485,13 +508,13 @@ export default function RegisterBiker() {
                                 placeholder={car ? 'ABC 123' : 'ABC 1234'}
                                 disabled={off}
                             />
-                            <PhotoField
+                            <LivePhotoField
                                 id="profile_picture"
                                 label="Profile Photo"
                                 file={form.data.profile_picture}
                                 onChange={set('profile_picture')}
                                 error={err('profile_picture')}
-                                hint="JPG or PNG, up to 2 MB."
+                                hint="Please position your face inside the frame. Make sure your face is clearly visible and that you are in a well-lit area. Taken live with your camera; gallery photos cannot be attached."
                                 disabled={off}
                             />
                             <div className="grid gap-5 sm:grid-cols-2">

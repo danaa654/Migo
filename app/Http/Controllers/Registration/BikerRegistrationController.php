@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Registration\RegisterBikerRequest;
 use App\Models\Rider;
 use App\Models\User;
+use App\Support\RiderEmailProof;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,9 @@ class BikerRegistrationController extends Controller
     public function store(RegisterBikerRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $photo = $request->file('profile_picture')?->store('rider-photos', 'public');
+        // Required live selfie (validated as a real JPG/PNG/WEBP, max 5 MB). Stored as a file under a random name; only the
+        // path is saved in the rider's record. It belongs to the Rider row created below for this same registration.
+        $photo = $request->file('profile_picture')->store('rider-photos', 'public');
         // Verification documents are private: stored on the "local" disk and only served to administrators.
         $documents = [];
         foreach (['license_document', 'registration_document', 'official_receipt', 'nbi_clearance'] as $field) {
@@ -38,7 +41,7 @@ class BikerRegistrationController extends Controller
                     'name' => $data['full_name'],
                     'email' => $data['email'],
                     'password' => $data['password'], // hashed by the User model cast
-                ]))->forceFill(['role' => AccountRole::Biker->value]);
+                ]))->forceFill(['role' => AccountRole::Biker->value, 'email_verified_at' => now()]); // email proven by the emailed code
                 $user->save();
 
                 // Every new biker starts as "pending" until an administrator approves the application.
@@ -70,6 +73,8 @@ class BikerRegistrationController extends Controller
 
             throw $e;
         }
+
+        RiderEmailProof::forget($request->session());
 
         return redirect('/login')->with(
             'status',

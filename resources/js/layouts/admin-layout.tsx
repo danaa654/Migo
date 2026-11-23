@@ -5,12 +5,16 @@ import {
     Bike,
     CalendarDays,
     ChartBar,
+    CreditCard,
     LayoutDashboard,
     LogOut,
     Map,
     Menu,
     MessageSquareWarning,
     Settings,
+    Ticket,
+    TriangleAlert,
+    UserCog,
     Users,
     X,
     type LucideIcon,
@@ -18,7 +22,14 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 type Shared = {
-    admin: { full_name: string; email: string; role: string } | null;
+    admin: {
+        full_name: string;
+        email: string;
+        role: string;
+        role_label?: string;
+        areas?: string[];
+    } | null;
+    dashboardUrl?: string | null;
     adminNotifications: {
         unread: number;
         latest: {
@@ -31,19 +42,20 @@ type Shared = {
     } | null;
 };
 
-const nav: { label: string; href: string; icon: LucideIcon }[] = [
-    { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Rider Management', href: '/admin/riders', icon: Bike },
-    { label: 'Passenger Management', href: '/admin/passengers', icon: Users },
-    { label: 'Booking Management', href: '/admin/bookings', icon: Map },
-    {
-        label: 'Complaint Management',
-        href: '/admin/complaints',
-        icon: MessageSquareWarning,
-    },
-    { label: 'Reports and Analytics', href: '/admin/reports', icon: ChartBar },
-    { label: 'Notifications', href: '/admin/notifications', icon: Bell },
-    { label: 'Admin Settings', href: '/admin/settings', icon: Settings },
+/** Each item belongs to an area; the server decides which areas a staff role has (AdminProfile::AREAS). */
+const nav: { label: string; href: string; icon: LucideIcon; area: string }[] = [
+    { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, area: 'dashboard' },
+    { label: 'Rider Management', href: '/admin/riders', icon: Bike, area: 'riders' },
+    { label: 'Subscription Management', href: '/admin/subscriptions', icon: CreditCard, area: 'subscriptions' },
+    { label: 'Passenger Management', href: '/admin/passengers', icon: Users, area: 'passengers' },
+    { label: 'Booking Management', href: '/admin/bookings', icon: Map, area: 'bookings' },
+    { label: 'Complaint Management', href: '/admin/complaints', icon: MessageSquareWarning, area: 'support' },
+    { label: 'Ticket Management', href: '/admin/tickets', icon: Ticket, area: 'support' },
+    { label: 'Incident Reports', href: '/admin/incidents', icon: TriangleAlert, area: 'support' },
+    { label: 'Reports and Analytics', href: '/admin/reports', icon: ChartBar, area: 'reports' },
+    { label: 'Notifications', href: '/admin/notifications', icon: Bell, area: 'notifications' },
+    { label: 'Staff Accounts', href: '/admin/staff', icon: UserCog, area: 'staff' },
+    { label: 'Admin Settings', href: '/admin/settings', icon: Settings, area: 'settings' },
 ];
 
 export const formatDate = (s?: string | null, time = false) => {
@@ -91,7 +103,9 @@ export default function AdminLayout({
     children: ReactNode;
 }) {
     const { url, props } = usePage();
-    const { admin, adminNotifications } = props as unknown as Shared;
+    const { admin, adminNotifications, dashboardUrl } =
+        props as unknown as Shared;
+    const visibleNav = nav.filter(({ area }) => admin?.areas?.includes(area));
     const [collapsed, setCollapsed] = useState(false);
     const [drawer, setDrawer] = useState(false);
     const bell = useDropdown();
@@ -162,8 +176,8 @@ export default function AdminLayout({
                             className={`flex items-center justify-between gap-2 rounded-br-[1.5rem] bg-linear-to-br from-[#1B5240] via-[#17483A] to-[#0F2F25] px-3 py-3 shadow-md ${collapsed ? 'lg:justify-center lg:rounded-br-2xl lg:px-2' : ''}`}
                         >
                             <Link
-                                href="/admin/dashboard"
-                                aria-label="Migo admin dashboard"
+                                href={dashboardUrl ?? '/admin/dashboard'}
+                                aria-label="Migo admin home"
                                 className={`flex min-w-0 items-center gap-3 rounded-lg text-left ${ring}`}
                             >
                                 <img
@@ -199,7 +213,7 @@ export default function AdminLayout({
                         className="relative z-10 flex-1 space-y-0.5 overflow-y-auto px-2.5 pt-3 pb-2"
                         aria-label="Admin navigation"
                     >
-                        {nav.map(({ label, href, icon: Icon }) => {
+                        {visibleNav.map(({ label, href, icon: Icon }) => {
                             const on = active(href);
                             const badge =
                                 href === '/admin/notifications'

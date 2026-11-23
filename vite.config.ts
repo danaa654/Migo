@@ -1,3 +1,4 @@
+
 import inertia from '@inertiajs/vite';
 import { wayfinder } from '@laravel/vite-plugin-wayfinder';
 import babel from '@rolldown/plugin-babel';
@@ -28,7 +29,14 @@ export default defineConfig({
             formVariants: true,
         }),
     ]),
+
     server: {
+        host: '0.0.0.0',
+        port: 5173,
+        strictPort: true,
+        hmr: {
+            host: '192.168.110.81', // CHANGE THIS TO YOUR COMPUTER'S IPv4 ADDRESS
+        },
         watch: {
             ignored: [
                 '**/.agents/**',
@@ -39,6 +47,7 @@ export default defineConfig({
             ],
         },
     },
+
     lint: {
         ignorePatterns: [
             'vendor/**',
@@ -56,6 +65,7 @@ export default defineConfig({
             typeAware: true,
         },
     },
+
     fmt: {
         printWidth: 80,
         tabWidth: 4,

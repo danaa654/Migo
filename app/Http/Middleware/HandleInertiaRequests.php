@@ -50,7 +50,7 @@ class HandleInertiaRequests extends Middleware
             'currentTeam' => fn () => $user?->currentTeam ? $user->toUserTeam($user->currentTeam) : null,
             'teams' => fn () => $user?->toUserTeams(includeCurrent: true) ?? [],
             // Admin portal: signed-in administrator + notification bell data
-            'admin' => fn () => ($p = $user?->adminProfile) ? ['full_name' => $p->full_name, 'email' => $p->email, 'role' => $p->role] : null,
+            'admin' => fn () => ($p = $user?->adminProfile) ? ['full_name' => $p->full_name, 'email' => $p->email, 'role' => $p->role, 'role_label' => $p->roleLabel(), 'areas' => $p->areas()] : null,
             'adminNotifications' => fn () => $user?->adminProfile ? $this->adminNotifications() : null,
         ];
     }

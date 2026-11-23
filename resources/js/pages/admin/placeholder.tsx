@@ -1,7 +1,11 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import AdminLayout from '@/layouts/admin-layout';
 
 export default function Placeholder({ title }: { title: string }) {
+    const { dashboardUrl } = usePage().props as unknown as {
+        dashboardUrl?: string | null;
+    };
+
     return (
         <AdminLayout title={title}>
             <div className="rounded-lg border border-m-line bg-m-card p-8 text-center shadow-sm">
@@ -11,10 +15,10 @@ export default function Placeholder({ title }: { title: string }) {
                     later phase.
                 </p>
                 <Link
-                    href="/admin/dashboard"
+                    href={dashboardUrl ?? '/admin/dashboard'}
                     className="mt-5 inline-block rounded-md bg-m-forest px-4 py-2 text-sm font-medium text-white hover:bg-m-forest-hover"
                 >
-                    Back to Dashboard
+                    Back to Home
                 </Link>
             </div>
         </AdminLayout>

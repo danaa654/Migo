@@ -13,7 +13,7 @@ class LoginOtpMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Ang Migo login code mo');
+        return new Envelope(subject: 'Ang Migo verification code mo');
     }
 
     public function content(): Content

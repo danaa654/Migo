@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Registration;
 
 use App\Enums\VehicleType;
+use App\Support\RiderEmailProof;
 use Illuminate\Validation\Rule;
 
 class RegisterBikerRequest extends RegistrationRequest
@@ -21,14 +22,27 @@ class RegisterBikerRequest extends RegistrationRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
+        $common = $this->commonRules();
+
         return [
-            ...$this->commonRules(),
+            ...$common,
+            // The email must have been proven with the emailed code in this same browser session (RiderEmailOtpController).
+            'email' => [
+                ...$common['email'],
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! RiderEmailProof::isVerified($this->session(), (string) $value)) {
+                        $fail('Verify this email with the 6-digit code we send you before submitting.');
+                    }
+                },
+            ],
             'vehicle_type' => ['required', Rule::enum(VehicleType::class)],
             'address' => ['required', 'string', 'max:255'],
             'license_number' => ['required', 'string', 'max:50', 'regex:/^[A-Z0-9\- ]+$/', Rule::unique('riders', 'license_number')],
             'license_expiry' => ['required', 'date', 'after:today'],
             'motorcycle_plate_number' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9\- ]+$/', Rule::unique('riders', 'motorcycle_plate_number')],
-            'profile_picture' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            // Mandatory selfie captured live with the device camera (the column stays nullable for riders registered before
+            // this rule existed). Real file contents are checked: extension AND detected MIME type, never a Base64 string.
+            'profile_picture' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
             // Required supporting documents. Real file contents are checked (extension AND detected MIME type); administrators
             // pre-screen them online, then check the ORIGINALS in person (face-to-face verification).
             'license_document' => $this->documentRules(),
@@ -61,9 +75,13 @@ class RegisterBikerRequest extends RegistrationRequest
             'motorcycle_plate_number.required' => 'Plate number is required.',
             'motorcycle_plate_number.regex' => 'Plate number may only contain letters, numbers, spaces and dashes.',
             'motorcycle_plate_number.unique' => 'This plate number is already registered.',
+            'profile_picture.required' => 'A profile photo is required. Open the camera and take a clear photo of your face.',
+            'profile_picture.file' => 'The profile photo could not be uploaded. Please take it again.',
+            'profile_picture.uploaded' => 'The profile photo could not be uploaded. Please take it again.',
             'profile_picture.image' => 'The profile photo must be an image.',
-            'profile_picture.mimes' => 'The profile photo must be a JPG or PNG file.',
-            'profile_picture.max' => 'The profile photo must not be larger than 2 MB.',
+            'profile_picture.mimes' => 'The profile photo must be a JPG, PNG or WEBP file.',
+            'profile_picture.mimetypes' => 'The profile photo must be a real JPG, PNG or WEBP image.',
+            'profile_picture.max' => 'The profile photo must not be larger than 5 MB.',
             'license_document.required' => "Upload your driver's license (photo or scan).",
             'registration_document.required' => 'Upload your motorcycle registration (OR/CR) or the allowed alternative document.',
             'official_receipt.required' => 'Upload your official receipt.',
