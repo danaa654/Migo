@@ -51,17 +51,18 @@ class HandleInertiaRequests extends Middleware
             'teams' => fn () => $user?->toUserTeams(includeCurrent: true) ?? [],
             // Admin portal: signed-in administrator + notification bell data
             'admin' => fn () => ($p = $user?->adminProfile) ? ['full_name' => $p->full_name, 'email' => $p->email, 'role' => $p->role, 'role_label' => $p->roleLabel(), 'areas' => $p->areas()] : null,
-            'adminNotifications' => fn () => $user?->adminProfile ? $this->adminNotifications() : null,
+            'adminNotifications' => fn () => $user?->adminProfile ? $this->adminNotifications($user->adminProfile) : null,
         ];
     }
 
     /** @return array{unread: int, latest: mixed}|null  null when the notifications table is unavailable */
-    private function adminNotifications(): ?array
+    private function adminNotifications(\App\Models\AdminProfile $admin): ?array
     {
         try {
+            // Same feed as the Notifications page: only the types this staff role can act on.
             return [
-                'unread' => DB::table('notifications')->whereNull('user_id')->where('is_read', false)->count(),
-                'latest' => DB::table('notifications')->whereNull('user_id')->select('id', 'title', 'message', 'is_read', 'created_at')->orderByDesc('created_at')->limit(5)->get(),
+                'unread' => \App\Http\Controllers\Admin\NotificationController::feed($admin)->where('is_read', false)->count(),
+                'latest' => \App\Http\Controllers\Admin\NotificationController::feed($admin)->select('id', 'title', 'message', 'is_read', 'created_at')->orderByDesc('created_at')->limit(5)->get(),
             ];
         } catch (\Throwable) {
             return null;

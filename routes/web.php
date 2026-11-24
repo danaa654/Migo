@@ -224,12 +224,26 @@ Route::middleware(['auth', EnsureActiveAdmin::class])->prefix('admin')->group(fu
     Route::get('settings', [DispatchSettingsController::class, 'edit'])->middleware('admin.area:settings')->name('admin.settings');
     Route::put('settings', [DispatchSettingsController::class, 'update'])->middleware(['admin.area:settings', 'throttle:20,1'])->name('admin.settings.update');
 
+    // Reports and Analytics: Administrator only (the "reports" area).
+    Route::get('reports', [\App\Http\Controllers\Admin\ReportController::class, 'index'])
+        ->middleware(['admin.area:reports', 'throttle:60,1'])
+        ->name('admin.reports');
+
+    // Notifications: the admin feed (rows with no user_id), limited to the types the staff role can act on.
+    Route::prefix('notifications')->middleware('admin.area:notifications')->name('admin.notifications.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('index');
+        Route::middleware('throttle:60,1')->group(function () {
+            Route::post('read-all', [\App\Http\Controllers\Admin\NotificationController::class, 'readAll'])->name('read-all');
+            Route::post('{id}/open', [\App\Http\Controllers\Admin\NotificationController::class, 'open'])->name('open');
+            Route::post('{id}/read', [\App\Http\Controllers\Admin\NotificationController::class, 'read'])->name('read');
+            Route::post('{id}/unread', [\App\Http\Controllers\Admin\NotificationController::class, 'unread'])->name('unread');
+        });
+    });
+
     // Modules built in later phases render a placeholder inside the admin layout. Each one is tied to an area
     // (see AdminProfile::AREAS): Operations Admin get subscriptions.
     foreach ([
         'subscriptions' => ['Subscription Management', 'subscriptions'],
-        'reports' => ['Reports and Analytics', 'reports'],
-        'notifications' => ['Notifications', 'notifications'],
     ] as $path => [$title, $area]) {
         Route::inertia($path, 'admin/placeholder', ['title' => $title])->middleware("admin.area:{$area}");
     }

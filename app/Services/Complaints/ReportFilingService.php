@@ -127,6 +127,7 @@ class ReportFilingService
                 'title' => $type === Complaint::TYPE_INCIDENT ? 'New incident report (safety)' : 'New '.$noun,
                 'message' => $who.' sent a '.$noun.': '.SupportCategories::label($data['category']).'.',
                 'notification_type' => $type.'_filed',
+                'data' => json_encode(['url' => '/admin/complaints/'.$report->id]),
                 'is_read' => false,
                 'created_at' => now(),
             ]);
