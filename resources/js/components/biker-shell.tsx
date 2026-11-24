@@ -5,6 +5,7 @@ import {
     LayoutDashboard,
     LogOut,
     Lock,
+    MessageSquareWarning,
     Navigation,
     Trophy,
 } from 'lucide-react';
@@ -20,7 +21,7 @@ type Props = {
     account: { name: string; email: string };
     /** Unlocks the Ride requests / Service requests links (accredited riders only). */
     canBook?: boolean;
-    active?: 'dashboard' | 'dispatch' | 'requests';
+    active?: 'dashboard' | 'dispatch' | 'requests' | 'complaints';
     /** Notifications for the bell in the top bar. */
     notifications?: Notifications;
     /** Accreditation progress shown at the bottom of the sidebar. */
@@ -29,7 +30,7 @@ type Props = {
 };
 
 type NavItem = {
-    key: 'dashboard' | 'dispatch' | 'requests';
+    key: 'dashboard' | 'dispatch' | 'requests' | 'complaints';
     href: string;
     label: string;
     icon: LucideIcon;
@@ -39,6 +40,7 @@ const NAV: NavItem[] = [
     { key: 'dashboard', href: '/biker/dashboard', label: 'Dashboard', icon: LayoutDashboard, needsBooking: false },
     { key: 'dispatch', href: '/biker/dispatch', label: 'Ride requests', icon: Navigation, needsBooking: true },
     { key: 'requests', href: '/biker/service-requests', label: 'Service requests', icon: ClipboardList, needsBooking: true },
+    { key: 'complaints', href: '/biker/complaints', label: 'Support', icon: MessageSquareWarning, needsBooking: true },
 ];
 
 const logout = () => router.post('/logout');

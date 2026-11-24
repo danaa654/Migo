@@ -1,8 +1,9 @@
-import { router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import {
     ChevronLeft,
     ChevronRight,
     ClipboardList,
+    Flag,
     MapPin,
     Star,
     User,
@@ -244,6 +245,15 @@ export default function BikerServiceRequests({
                                             <span className="text-base font-bold text-[var(--b-ink)]">
                                                 {peso(t.fare)}
                                             </span>
+                                            {t.passenger && (
+                                                <Link
+                                                    href={`/biker/complaints?booking=${t.id}`}
+                                                    className={`inline-flex items-center gap-1 rounded-md border border-[var(--b-line)] px-2.5 py-1 text-xs font-medium text-[var(--b-body)] transition hover:bg-[var(--b-page)] ${ring}`}
+                                                >
+                                                    <Flag className="size-3" aria-hidden />
+                                                    Report passenger
+                                                </Link>
+                                            )}
                                             {t.rating != null && (
                                                 <span
                                                     className="inline-flex items-center gap-1 text-xs font-semibold text-m-amber"

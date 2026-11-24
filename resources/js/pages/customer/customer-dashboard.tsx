@@ -109,7 +109,7 @@ export default function CustomerDashboard({ account, profile, bookings }: Props)
             {/* Hero */}
             <section className="relative overflow-hidden rounded-xl border border-m-line bg-gradient-to-br from-m-mint via-m-mint to-[#C9E6D3] px-6 py-6 shadow-sm sm:px-8 dark:to-[#244A3B]">
                 <img
-                    src="/img/header-P.webp"
+                    src="/img/header-P.png"
                     alt=""
                     aria-hidden
                     draggable={false}

@@ -35,7 +35,7 @@ export default defineConfig({
         port: 5173,
         strictPort: true,
         hmr: {
-            host: '192.168.110.81', // CHANGE THIS TO YOUR COMPUTER'S IPv4 ADDRESS
+            host: '192.168.110.82', // CHANGE THIS TO YOUR COMPUTER'S IPv4 ADDRESS
         },
         watch: {
             ignored: [

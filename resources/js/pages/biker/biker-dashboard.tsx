@@ -630,7 +630,7 @@ export default function BikerDashboard({
                 {/* Hero (same look as the admin welcome banner) */}
                 <section className="relative order-1 min-h-32 overflow-hidden rounded-xl border border-[var(--b-line)] bg-gradient-to-br from-m-mint via-m-mint to-[#C9E6D3] px-5 py-4 shadow-sm dark:to-[#244A3B]">
                     <img
-                        src="/img/header-banner.webp"
+                        src="/img/header-banner.png"
                         alt=""
                         aria-hidden
                         draggable={false}

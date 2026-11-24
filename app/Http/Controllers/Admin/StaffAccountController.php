@@ -26,7 +26,7 @@ class StaffAccountController extends Controller
 {
     private const ROLE_DESCRIPTIONS = [
         AdminProfile::ROLE_OPERATIONS => 'Rider applications, document verification and accreditation, subscriptions, and bookings.',
-        AdminProfile::ROLE_SUPPORT => 'Tickets, complaints and incident reports.',
+        AdminProfile::ROLE_SUPPORT => 'Support Center: complaints, support requests and incident reports.',
     ];
 
     public function index(Request $request): Response

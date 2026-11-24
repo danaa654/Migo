@@ -34,7 +34,11 @@ const nav: Item[] = [
         icon: ClipboardList,
         also: ['/customer/ride/'],
     },
-    { label: 'Complaints', icon: MessageSquareWarning },
+    {
+        label: 'Support',
+        href: '/customer/complaints',
+        icon: MessageSquareWarning,
+    },
     { label: 'Profile', href: '/customer/profile', icon: UserRound },
 ];
 

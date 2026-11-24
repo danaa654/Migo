@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { ArrowRight, Car, MapPin } from 'lucide-react';
+import { ArrowRight, Car, Flag, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import BookingDetails from '@/components/booking-details';
 import ConfirmDialog from '@/components/confirm-dialog';
@@ -46,6 +46,8 @@ type Booking = {
     recipient_phone?: string | null;
     item_description?: string | null;
     package_size?: string | null;
+    /** True once a rider was assigned: only then can the trip be reported. */
+    has_rider?: boolean;
 };
 type Props = { status?: string | null; bookings: Booking[] };
 type Filter = 'all' | 'active' | 'completed' | 'cancelled';
@@ -263,6 +265,15 @@ export default function CustomerBookings({ status, bookings }: Props) {
                                                     className={`rounded-md bg-m-forest px-3 py-1.5 text-xs font-medium text-white transition hover:bg-m-forest-hover ${ring}`}
                                                 >
                                                     Track
+                                                </Link>
+                                            )}
+                                            {b.has_rider && (
+                                                <Link
+                                                    href={`/customer/complaints?booking=${b.id}`}
+                                                    className={`inline-flex items-center gap-1 rounded-md border border-m-line px-3 py-1.5 text-xs font-medium text-m-body transition hover:bg-m-page ${ring}`}
+                                                >
+                                                    <Flag className="size-3" aria-hidden />
+                                                    Report rider
                                                 </Link>
                                             )}
                                             {CANCELLABLE.includes(b.booking_status) && (

@@ -260,7 +260,7 @@ export default function Dashboard({
         ['Review Rider Applications', '/admin/riders', ClipboardCheck],
         ['Manage Passengers', '/admin/passengers', UserCog],
         ['Monitor Bookings', '/admin/bookings', Map],
-        ['Review Complaints', '/admin/complaints', MessageSquareWarning],
+        ['Open Support Center', '/admin/complaints', MessageSquareWarning],
     ];
 
     return (
@@ -326,7 +326,7 @@ export default function Dashboard({
                 />
                 <Stat
                     icon={MessageSquareWarning}
-                    label="Open Complaints"
+                    label="Open Reports"
                     sub="Needs Attention"
                     value={stats.openComplaints}
                     tone="bg-m-red/10 text-m-red"
@@ -427,22 +427,22 @@ export default function Dashboard({
                     </Panel>
 
                     <Panel
-                        title="Recent Complaints"
+                        title="Recent Reports"
                         icon={MessageSquareWarning}
                         href="/admin/complaints"
-                        linkText="View All Complaints"
+                        linkText="Open Support Center"
                     >
                         <DataTable
                             cols={[
-                                'Complaint ID',
+                                'Report ID',
                                 'Reported By',
-                                'Complaint Category',
+                                'Category',
                                 'Date Submitted',
                                 'Status',
                                 'Action',
                             ]}
                             rows={complaints}
-                            empty="No complaints submitted."
+                            empty="No reports submitted."
                             render={(c) => (
                                 <tr key={c.id}>
                                     <td className={`${td} font-mono text-xs`}>
@@ -468,7 +468,7 @@ export default function Dashboard({
                                             href={`/admin/complaints/${c.id}`}
                                             className={action}
                                         >
-                                            Review Complaint
+                                            Review Report
                                         </Link>
                                     </td>
                                 </tr>

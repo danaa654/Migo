@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ComplaintManagementController;
 use App\Http\Controllers\Admin\DispatchMonitorController;
 use App\Http\Controllers\Admin\DispatchSettingsController;
 use App\Http\Controllers\Admin\PassengerManagementController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\Admin\RiderManagementController;
 use App\Http\Controllers\Admin\StaffAccountController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\BikerAccreditationController;
+use App\Http\Controllers\BikerComplaintController;
 use App\Http\Controllers\BikerDashboardController;
 use App\Http\Controllers\BikerServiceRequestController;
 use App\Http\Controllers\CustomerAuth\CustomerPhoneController;
@@ -15,6 +17,7 @@ use App\Http\Controllers\CustomerAuth\EmailOtpController;
 use App\Http\Controllers\CustomerAuth\GoogleController;
 use App\Http\Controllers\CustomerAuth\PhoneOtpController;
 use App\Http\Controllers\CustomerBookingController;
+use App\Http\Controllers\CustomerComplaintController;
 use App\Http\Controllers\CustomerDashboardController;
 use App\Http\Controllers\CustomerProfileController;
 use App\Http\Controllers\DashboardController;
@@ -101,6 +104,10 @@ Route::middleware(['auth', 'role:customer'])->prefix('customer')->group(function
         Route::get('ride/{booking}/live', [CustomerBookingController::class, 'live'])->middleware('throttle:90,1')->name('customer.ride.live');
         Route::post('bookings/{booking}/retry', [CustomerBookingController::class, 'retry'])->middleware('throttle:10,1')->name('customer.bookings.retry');
         Route::post('bookings/{booking}/rate', [CustomerBookingController::class, 'rate'])->middleware('throttle:10,1')->name('customer.bookings.rate');
+
+        // Support Center: send a complaint, support request or incident report (optionally about one of my trips) and follow the answer. Scoped to my profile.
+        Route::get('complaints', [CustomerComplaintController::class, 'index'])->name('customer.complaints');
+        Route::post('complaints', [CustomerComplaintController::class, 'store'])->middleware('throttle:10,1')->name('customer.complaints.store');
     });
 
     // The customer's own profile: full name, sign-in methods, phone (verified by SMS code) and, for password accounts, password.
@@ -123,6 +130,11 @@ Route::middleware(['auth', 'role:biker'])->prefix('biker')->group(function () {
     Route::get('service-requests', BikerServiceRequestController::class)->middleware('biker.approved')->name('biker.service-requests');
 
     // Real-time dispatch (rider side). Accredited, active bikers only. All decisions are made by the server.
+    // Support Center for riders: complaints about passengers, support requests and incident reports (accredited riders only,
+    // same as the trip history they pick the trip from).
+    Route::get('complaints', [BikerComplaintController::class, 'index'])->middleware('biker.approved')->name('biker.complaints');
+    Route::post('complaints', [BikerComplaintController::class, 'store'])->middleware(['biker.approved', 'throttle:10,1'])->name('biker.complaints.store');
+
     Route::middleware('biker.approved')->prefix('dispatch')->name('biker.dispatch.')->group(function () {
         Route::get('/', [RiderDispatchController::class, 'index'])->name('index');
         Route::get('state', [RiderDispatchController::class, 'state'])->middleware('throttle:90,1')->name('state');
@@ -177,6 +189,18 @@ Route::middleware(['auth', EnsureActiveAdmin::class])->prefix('admin')->group(fu
         });
     });
 
+    // Support Center: complaints, support requests and incident reports in one inbox (the "support" area:
+    // Administrator and Support Staff). The /admin/complaints URLs stay; tickets and incidents are types, not modules.
+    Route::prefix('complaints')->middleware('admin.area:support')->name('admin.complaints.')->group(function () {
+        Route::get('/', [ComplaintManagementController::class, 'index'])->name('index');
+        Route::get('{complaint}', [ComplaintManagementController::class, 'show'])->name('show');
+        Route::middleware('throttle:30,1')->group(function () {
+            Route::post('{complaint}/investigate', [ComplaintManagementController::class, 'investigate'])->name('investigate');
+            Route::post('{complaint}/resolve', [ComplaintManagementController::class, 'resolve'])->name('resolve');
+            Route::post('{complaint}/reject', [ComplaintManagementController::class, 'reject'])->name('reject');
+        });
+    });
+
     // Booking Management = live dispatch monitor. Admins can watch everything and cancel / restart a search, but they
     // can never assign a rider: assignment only happens when a rider accepts (DispatchService::accept).
     Route::prefix('bookings')->middleware('admin.area:bookings')->name('admin.bookings.')->group(function () {
@@ -201,13 +225,9 @@ Route::middleware(['auth', EnsureActiveAdmin::class])->prefix('admin')->group(fu
     Route::put('settings', [DispatchSettingsController::class, 'update'])->middleware(['admin.area:settings', 'throttle:20,1'])->name('admin.settings.update');
 
     // Modules built in later phases render a placeholder inside the admin layout. Each one is tied to an area
-    // (see AdminProfile::AREAS): Operations Admin get subscriptions; Support Staff get tickets, complaints and incidents.
+    // (see AdminProfile::AREAS): Operations Admin get subscriptions.
     foreach ([
         'subscriptions' => ['Subscription Management', 'subscriptions'],
-        'complaints' => ['Complaint Management', 'support'],
-        'complaints/{complaint}' => ['Complaint Review', 'support'],
-        'tickets' => ['Ticket Management', 'support'],
-        'incidents' => ['Incident Reports', 'support'],
         'reports' => ['Reports and Analytics', 'reports'],
         'notifications' => ['Notifications', 'notifications'],
     ] as $path => [$title, $area]) {

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\TeamInvitation;
+use App\Services\Complaints\ComplaintPenaltyService;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::call(function () {
@@ -17,3 +18,10 @@ Schedule::command('dispatch:tick')
     ->withoutOverlapping()
     ->runInBackground()
     ->description('Dispatch tick: offer expiry, search expansion, no-rider timeout');
+
+// Lift timed suspensions that came from an upheld complaint once their end date has passed.
+Schedule::call(fn () => app(ComplaintPenaltyService::class)->liftExpiredSuspensions())
+    ->everyFiveMinutes()
+    ->name('complaints:lift-suspensions')
+    ->withoutOverlapping()
+    ->description('Lift ended complaint suspensions');

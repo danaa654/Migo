@@ -114,7 +114,10 @@ class CustomerBookingController extends Controller
         return Inertia::render('customer/customer-bookings', [
             'status' => $request->session()->get('status'),
             'bookings' => $passenger
-                ? Booking::where('passenger_id', $passenger->id)->latest('created_at')->limit(100)->get(self::COLUMNS)
+                // has_rider drives the "Report rider" button; the rider's id itself is not sent to the browser.
+                ? Booking::where('passenger_id', $passenger->id)->latest('created_at')->limit(100)->get([...self::COLUMNS, 'rider_id'])
+                    ->map(fn (Booking $b) => [...$b->makeHidden('rider_id')->toArray(), 'has_rider' => $b->rider_id !== null])
+                    ->values()
                 : [],
         ]);
     }
