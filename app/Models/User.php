@@ -152,9 +152,18 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $methods;
     }
 
-    /** Only accounts with a real, user-chosen password can change it. */
+    /** Only accounts with a real, user-chosen password can change it (a Google sign-in later does not take it away). */
     public function canChangePassword(): bool
     {
-        return $this->email !== null && $this->google_id === null && $this->has_password;
+        return $this->email !== null && $this->has_password;
+    }
+
+    /**
+     * Passwordless customers (Google / phone / email code) may add a password if they have a verified email,
+     * because the password login uses the email address as the identifier.
+     */
+    public function canSetPassword(): bool
+    {
+        return $this->email !== null && $this->email_verified_at !== null && ! $this->has_password;
     }
 }

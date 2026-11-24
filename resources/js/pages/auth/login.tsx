@@ -58,8 +58,8 @@ export default function Login({
             title="Welcome Back"
             subtitle={
                 tab === 'customer'
-                    ? 'Mag-login gamit ang Google o phone number mo.'
-                    : 'Para sa riders at drivers: mag-login gamit ang email at password mo.'
+                    ? 'Log in with your Google or phone number.'
+                    : 'For riders and drivers: log in with your email and password.'
             }
         >
             <div className="space-y-4">

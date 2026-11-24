@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import EmailOtpFlow from '@/components/email-otp-flow';
+import MigoCustomerPasswordLogin from '@/components/migo-customer-password-login';
 import PhoneOtpFlow from '@/components/phone-otp-flow';
 
 function GoogleG() {
@@ -26,14 +27,28 @@ function GoogleG() {
     );
 }
 
-/** Customers: Google, phone number + SMS code, or email + emailed code. There is no registration form; the account is created on first sign-in. */
+type Method = 'phone' | 'email' | 'password';
+
+const switchLabels: Record<Method, string> = {
+    phone: 'Use the phone number',
+    email: 'Use the email code',
+    password: 'Use the email and password',
+};
+
+/**
+ * Customers: Google, phone number + SMS code, email + emailed code, or email + password (optional, set later in Profile).
+ * There is no registration form; the account is created on first sign-in by Google or a code.
+ */
 export default function MigoCustomerLogin({
     showGuest = true,
 }: {
     /** Hide the "Continue as guest" link when this form is already shown inside the booking page. */
     showGuest?: boolean;
 }) {
-    const [method, setMethod] = useState<'phone' | 'email'>('phone');
+    const [method, setMethod] = useState<Method>('phone');
+    const others = (['phone', 'email', 'password'] as Method[]).filter(
+        (m) => m !== method,
+    );
 
     return (
         <div className="w-full max-w-full min-w-0 space-y-4">
@@ -65,6 +80,8 @@ export default function MigoCustomerLogin({
                         )
                     }
                 />
+            ) : method === 'password' ? (
+                <MigoCustomerPasswordLogin onForgot={() => setMethod('email')} />
             ) : (
                 <EmailOtpFlow
                     sendUrl="/auth/email-otp/send"
@@ -77,23 +94,21 @@ export default function MigoCustomerLogin({
                 />
             )}
 
-            <p className="text-center">
-                <button
-                    type="button"
-                    onClick={() =>
-                        setMethod(method === 'phone' ? 'email' : 'phone')
-                    }
-                    className="text-sm font-semibold text-m-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-m-accent"
-                >
-                    {method === 'phone'
-                        ? 'Gamitin na lang ang email'
-                        : 'Gamitin na lang ang phone number'}
-                </button>
-            </p>
+            <div className="flex flex-col items-center gap-1.5">
+                {others.map((m) => (
+                    <button
+                        key={m}
+                        type="button"
+                        onClick={() => setMethod(m)}
+                        className="text-sm font-semibold text-m-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-m-accent"
+                    >
+                        {switchLabels[m]}
+                    </button>
+                ))}
+            </div>
 
             <p className="border-t border-m-line pt-4 text-center text-xs leading-relaxed text-m-muted">
-                Walang registration form: awtomatikong magagawa ang account mo
-                sa unang login. Sa pagpapatuloy, sumasang-ayon ka sa{' '}
+                No registration form: your account is created automatically on your first login. By continuing, you agree to the{' '}
                 <Link
                     href="/terms"
                     className="font-semibold text-m-accent underline-offset-2 hover:underline"

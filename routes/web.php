@@ -114,6 +114,7 @@ Route::middleware(['auth', 'role:customer'])->prefix('customer')->group(function
     Route::get('profile', [CustomerProfileController::class, 'edit'])->name('customer.profile');
     Route::patch('profile', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
     Route::put('profile/password', [CustomerProfileController::class, 'updatePassword'])->name('customer.profile.password');
+    Route::put('profile/password/set', [CustomerProfileController::class, 'setPassword'])->middleware('throttle:10,1')->name('customer.profile.password.set');
 
     // Add or confirm the phone number with an SMS code (same OTP engine as the login).
     Route::post('profile/phone/send', [CustomerPhoneController::class, 'send'])->middleware('throttle:20,1')->name('customer.profile.phone.send');

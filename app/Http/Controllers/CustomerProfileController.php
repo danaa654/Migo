@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Customer\SetCustomerPasswordRequest;
 use App\Http\Requests\Customer\UpdateCustomerPasswordRequest;
 use App\Http\Requests\Customer\UpdateCustomerProfileRequest;
 use App\Models\Passenger;
@@ -36,6 +37,7 @@ class CustomerProfileController extends Controller
                 ],
                 'sign_in_methods' => $user->signInMethods(),
                 'can_change_password' => $user->canChangePassword(),
+                'can_set_password' => $user->canSetPassword(),
                 'needs_profile' => $user->needsProfileCompletion(),
             ],
         ]);
@@ -68,5 +70,16 @@ class CustomerProfileController extends Controller
         $request->user()->update(['password' => $request->validated('password')]); // hashed by the User model cast
 
         return back()->with('status', 'Password changed.');
+    }
+
+    /** First password for a customer who signed up with Google, phone or an email code. They are already signed in. */
+    public function setPassword(SetCustomerPasswordRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->canSetPassword(), 403);
+
+        $user->forceFill(['password' => $request->validated('password'), 'has_password' => true])->save(); // hashed by the User model cast
+
+        return back()->with('status', 'Na-save ang password mo. Puwede ka nang mag-login gamit ang email at password.');
     }
 }

@@ -64,7 +64,8 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::authenticateUsing(function (Request $request) {
             $user = User::with('adminProfile')->where('email', $request->input(Fortify::username()))->first();
 
-            if (! $user || ! Hash::check((string) $request->input('password'), $user->password)) {
+            // has_password = false means a passwordless customer (random, unusable hash): password login is never allowed.
+            if (! $user || ! $user->has_password || ! Hash::check((string) $request->input('password'), $user->password)) {
                 return null;
             }
 
