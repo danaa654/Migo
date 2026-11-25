@@ -36,6 +36,9 @@ class SubscriptionManagementController extends Controller
             'status' => $request->session()->get('status'),
             'canManage' => (bool) $admin?->hasArea('subscriptions_manage'),
             'stats' => $this->stats(),
+            'overview' => $tab === 'overview' ? $this->overview() : null,
+            // plan name -> colour, so every table can colour its plan chip
+            'planColors' => SubscriptionPlan::whereNotNull('color')->pluck('color', 'name'),
             'subscriptions' => $tab === 'subscriptions' ? $this->subscriptions($request) : null,
             'payments' => $tab === 'payments' ? $this->payments($request) : null,
             'plans' => in_array($tab, ['plans', 'subscriptions'], true) ? $this->plans() : null,
@@ -81,6 +84,7 @@ class SubscriptionManagementController extends Controller
         $d = $request->validate([
             'name' => ['required', 'string', 'max:80'],
             'description' => ['nullable', 'string', 'max:500'],
+            'color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'duration_value' => ['required', 'integer', 'min:1', 'max:120'],
             'duration_unit' => ['required', Rule::in(SubscriptionPlan::UNITS)],
             'price' => ['required', 'numeric', 'min:1', 'max:1000000'],
@@ -108,6 +112,42 @@ class SubscriptionManagementController extends Controller
             'trials_converted' => (int) DB::table('rider_subscriptions as t')->where('t.subscription_type', 'trial')
                 ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('subscription_payments as p')->whereColumn('p.rider_id', 't.rider_id')->where('p.status', 'verified'))
                 ->count(),
+        ];
+    }
+
+    /** Extra data for the redesigned Overview: per-plan numbers, six months of revenue and the latest paid payments. Revenue is GROSS (before gateway fees). */
+    private function overview(): array
+    {
+        $paid = SubscriptionPayment::where('status', 'verified')->selectRaw('subscription_plan_id, count(*) as n, sum(amount) as total')
+            ->groupBy('subscription_plan_id')->get()->keyBy('subscription_plan_id');
+        $active = RiderSubscription::effective()->where('subscription_type', 'paid')->selectRaw('subscription_plan_id, count(*) as n')
+            ->groupBy('subscription_plan_id')->pluck('n', 'subscription_plan_id');
+
+        $byPlan = SubscriptionPlan::orderBy('sort_order')->orderBy('id')->get()->map(fn (SubscriptionPlan $p) => [
+            'id' => $p->id, 'name' => $p->name, 'color' => $p->color, 'price' => (float) $p->price, 'duration' => $p->durationLabel(), 'is_active' => (bool) $p->is_active,
+            'active' => (int) ($active[$p->id] ?? 0), 'purchases' => (int) ($paid[$p->id]->n ?? 0), 'revenue' => (float) ($paid[$p->id]->total ?? 0),
+        ])->all();
+
+        $from = now()->startOfMonth()->subMonths(5);
+        $rows = SubscriptionPayment::where('status', 'verified')->where('verified_at', '>=', $from)->get(['amount', 'verified_at']);
+        $monthly = collect(range(0, 5))->map(function (int $i) use ($from, $rows) {
+            $m = $from->copy()->addMonths($i);
+
+            return ['label' => $m->format('M'), 'total' => (float) $rows->filter(fn ($r) => $r->verified_at?->format('Y-m') === $m->format('Y-m'))->sum('amount')];
+        })->all();
+
+        $recent = DB::table('subscription_payments as p')->join('riders as r', 'r.id', '=', 'p.rider_id')
+            ->where('p.status', 'verified')->orderByDesc('p.verified_at')->limit(6)
+            ->get(['r.full_name', 'p.plan_name_snapshot', 'p.amount', 'p.payment_method', 'p.verified_at'])
+            ->map(fn ($x) => [
+                'rider' => $x->full_name, 'plan' => $x->plan_name_snapshot, 'amount' => (float) $x->amount,
+                'method' => SubscriptionPayment::METHODS[$x->payment_method] ?? $x->payment_method,
+                'at' => $x->verified_at ? \Illuminate\Support\Carbon::parse($x->verified_at)->toIso8601String() : null,
+            ])->all();
+
+        return [
+            'by_plan' => $byPlan, 'monthly' => $monthly, 'recent' => $recent,
+            'failed_30d' => (int) SubscriptionPayment::where('status', 'failed')->where('created_at', '>=', now()->subDays(30))->count(),
         ];
     }
 
@@ -186,7 +226,7 @@ class SubscriptionManagementController extends Controller
         $counts = DB::table('rider_subscriptions')->where('subscription_type', 'paid')->selectRaw('subscription_plan_id, count(*) as n')->groupBy('subscription_plan_id')->pluck('n', 'subscription_plan_id');
 
         return SubscriptionPlan::orderBy('sort_order')->orderBy('id')->get()->map(fn (SubscriptionPlan $p) => [
-            'id' => $p->id, 'name' => $p->name, 'description' => $p->description, 'duration_value' => $p->duration_value,
+            'id' => $p->id, 'name' => $p->name, 'description' => $p->description, 'color' => $p->color, 'duration_value' => $p->duration_value,
             'duration_unit' => $p->duration_unit, 'duration' => $p->durationLabel(), 'price' => $p->price,
             'monthly' => $p->monthlyEquivalent(), 'is_active' => $p->is_active, 'subscribers' => (int) ($counts[$p->id] ?? 0),
         ])->all();

@@ -2,10 +2,11 @@ import { router, useForm } from '@inertiajs/react';
 import { Check, CheckCircle2, Clock, CreditCard, ShieldAlert, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Notifications } from '@/components/biker-notifications';
-import { elapsedPct, fmtDate, GOLD, leftLabel, planIcon } from '@/components/biker-plan';
+import { elapsedPct, fmtDate, leftLabel, planIcon, planTheme } from '@/components/biker-plan';
 import BikerShell from '@/components/biker-shell';
+import { colorFor, planStyle } from '@/lib/plan-color';
 
-type Plan = { id: number; name: string; description: string | null; duration: string; price: number; monthly: number | null };
+type Plan = { id: number; name: string; color: string | null; description: string | null; duration: string; price: number; monthly: number | null };
 type Props = {
     account: { name: string; email: string };
     notifications: Notifications;
@@ -13,8 +14,8 @@ type Props = {
     required: boolean;
     access: { allowed: boolean; code: string; message: string; type: 'paid' | 'trial' | null };
     trial: { starts_at: string; expires_at: string; active: boolean; day: number; daily_limit: number; used_today: number } | null;
-    paid: { plan: string; duration: string; amount: number; starts_at: string; expires_at: string } | null;
-    next: { plan: string; starts_at: string; expires_at: string } | null;
+    paid: { plan: string; color: string | null; duration: string; amount: number; starts_at: string; expires_at: string } | null;
+    next: { plan: string; color: string | null; starts_at: string; expires_at: string } | null;
     plans: Plan[];
     hasPending: boolean;
     returnedFromCheckout: boolean;
@@ -33,14 +34,6 @@ const PILL: Record<string, string> = {
     cancelled: 'bg-slate-200 text-slate-700',
 };
 const panel = 'rounded-2xl border border-[var(--b-line)] bg-[var(--b-card)] p-5 shadow-sm';
-
-/** Card art per tier. Unknown plan names (an admin can add plans) cycle through the same looks. */
-const TIERS = [
-    { key: 'basic', art: 'from-[#FCE38A] via-[#F5C542] to-[#D9A116] text-[#4A3300]', accent: 'text-[#7A5500]', gold: true },
-    { key: 'standard', art: 'from-[#3E6A8E] via-[#2C4F73] to-[#182C45] text-white', accent: 'text-[#A9D3F5]', gold: false },
-    { key: 'premium', art: 'from-[#2B2B2B] via-[#171717] to-[#050505] text-white', accent: 'text-[#F5C542]', gold: false },
-];
-const tierFor = (name: string, index: number) => TIERS.find((t) => name.toLowerCase().includes(t.key)) ?? TIERS[index % TIERS.length]!;
 
 /** EMV chip drawn with CSS. */
 function Chip() {
@@ -109,18 +102,18 @@ export default function BikerSubscription(p: Props) {
                     </div>
                 )}
 
-                {/* Current subscription (gold, same look as the Basic plan card) */}
+                {/* Current subscription: yellow for Basic, blue for Standard, black for Premium */}
                 <section aria-labelledby="current-plan">
                     <h2 id="current-plan" className="sr-only">
                         Your subscription
                     </h2>
 
                     {p.required && hasPaid && p.paid ? (
-                        <div className={`relative overflow-hidden rounded-2xl p-5 shadow-md ring-1 ring-[#B8860B]/50 ${GOLD}`}>
-                            <Shine strong />
+                        <div className="relative overflow-hidden rounded-2xl p-5 shadow-md" style={planTheme(p.paid.plan, p.paid.color).card}>
+                            <Shine strong={!planTheme(p.paid.plan, p.paid.color).onDark} />
                             <div className="relative flex flex-col gap-4">
                                 <p className="flex flex-wrap items-center gap-3 text-2xl font-extrabold">
-                                    <span className="flex size-11 items-center justify-center rounded-xl bg-[#4A3300]/10">
+                                    <span className="flex size-11 items-center justify-center rounded-xl" style={{ background: planTheme(p.paid.plan, p.paid.color).soft }}>
                                         {(() => {
                                             const PlanIcon = planIcon(p.paid.plan);
 
@@ -149,18 +142,19 @@ export default function BikerSubscription(p: Props) {
                                     </div>
                                 </dl>
                                 <div
-                                    className="h-2 overflow-hidden rounded-full bg-[#4A3300]/20"
+                                    className="h-2 overflow-hidden rounded-full"
+                                    style={{ background: planTheme(p.paid.plan, p.paid.color).track }}
                                     role="progressbar"
                                     aria-label="Subscription time used"
                                     aria-valuemin={0}
                                     aria-valuemax={100}
                                     aria-valuenow={Math.round(elapsedPct(p.paid.starts_at, p.paid.expires_at))}
                                 >
-                                    <div className="h-full rounded-full bg-[#6B4A00]" style={{ width: `${elapsedPct(p.paid.starts_at, p.paid.expires_at)}%` }} />
+                                    <div className="h-full rounded-full" style={{ width: `${elapsedPct(p.paid.starts_at, p.paid.expires_at)}%`, background: planTheme(p.paid.plan, p.paid.color).bar }} />
                                 </div>
                                 <p className="text-sm font-medium opacity-80">Booking access: unlimited while active. You keep 100% of every fare.</p>
                                 {p.next && (
-                                    <p className="rounded-lg bg-white/40 px-3 py-2 text-sm font-medium">
+                                    <p className="rounded-lg px-3 py-2 text-sm font-medium" style={{ background: planTheme(p.paid.plan, p.paid.color).soft }}>
                                         Renewal queued: {p.next.plan} starts {when(p.next.starts_at)}.
                                     </p>
                                 )}
@@ -206,24 +200,26 @@ export default function BikerSubscription(p: Props) {
                     )}
                     <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         {p.plans.map((pl, i) => {
-                            const t = tierFor(pl.name, i);
+                            const hex = colorFor(pl.name, pl.color, i);
+                            const t = planStyle(hex);
                             const Icon = planIcon(pl.name);
                             const current = hasPaid && p.paid?.plan === pl.name;
 
                             return (
                                 <article
                                     key={pl.id}
+                                    style={current ? { borderColor: hex, boxShadow: `0 0 0 2px ${hex}66` } : undefined}
                                     className={`group flex flex-col overflow-hidden rounded-2xl border bg-[var(--b-card)] shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg ${
-                                        current ? 'border-[#D9A116] ring-2 ring-[#F5C542]/60' : 'border-[var(--b-line)]'
+                                        current ? '' : 'border-[var(--b-line)]'
                                     }`}
                                 >
-                                    <div className={`relative aspect-[1.7/1] bg-gradient-to-br p-4 ${t.art}`}>
-                                        <Shine strong={t.gold} />
+                                    <div className="relative aspect-[1.7/1] p-4" style={t.card}>
+                                        <Shine strong={!t.onDark} />
                                         <div className="relative flex h-full flex-col justify-between">
                                             <div className="flex items-start justify-between">
                                                 <div>
                                                     <p className="text-[11px] font-extrabold tracking-[0.25em]">MIGO</p>
-                                                    <p className={`flex items-center gap-1 text-[11px] font-bold tracking-widest uppercase ${t.accent}`}>
+                                                    <p className="flex items-center gap-1 text-[11px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>
                                                         <Icon className="size-3" aria-hidden /> {pl.name}
                                                     </p>
                                                 </div>
@@ -241,7 +237,7 @@ export default function BikerSubscription(p: Props) {
                                             </div>
                                         </div>
                                         {current && (
-                                            <span className={`absolute top-3 right-12 rounded-full px-2 py-0.5 text-[10px] font-extrabold ${t.gold ? 'bg-[#4A3300] text-[#FCE38A]' : GOLD}`}>Current plan</span>
+                                            <span className="absolute top-3 right-12 rounded-full px-2 py-0.5 text-[10px] font-extrabold" style={t.pill}>Current plan</span>
                                         )}
                                     </div>
                                     <div className="flex flex-1 flex-col p-4">
@@ -324,7 +320,7 @@ export default function BikerSubscription(p: Props) {
             {plan && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-label={`Pay for ${plan.name}`}>
                     <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-[var(--b-card)] shadow-xl">
-                        <div className={`relative bg-gradient-to-br p-5 ${tierFor(plan.name, 0).art}`}>
+                        <div className="relative p-5" style={planStyle(colorFor(plan.name, plan.color)).card}>
                             <Shine />
                             <button onClick={() => setPlan(null)} aria-label="Close" className="absolute top-3 right-3 rounded-full p-1 hover:bg-white/15">
                                 <X className="size-5" />

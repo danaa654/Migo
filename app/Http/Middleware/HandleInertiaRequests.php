@@ -57,7 +57,7 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
-    /** @return array{required: bool, kind: string|null, plan: string|null, starts_at: string|null, expires_at: string|null}|null */
+    /** @return array{required: bool, kind: string|null, plan: string|null, color?: string|null, starts_at: string|null, expires_at: string|null}|null */
     private function bikerSubscription(?\App\Models\User $user): ?array
     {
         $rider = $user?->rider;
@@ -75,6 +75,7 @@ class HandleInertiaRequests extends Middleware
                 'required' => app(\App\Services\Subscriptions\SubscriptionService::class)->required(),
                 'kind' => $sub?->subscription_type,
                 'plan' => $sub ? ($sub->subscription_type === 'trial' ? 'Free Trial' : $sub->plan_name_snapshot) : null,
+                'color' => $sub && $sub->subscription_type === 'paid' ? \App\Models\SubscriptionPlan::whereKey($sub->subscription_plan_id)->value('color') : null,
                 'starts_at' => $sub?->starts_at?->toIso8601String(),
                 'expires_at' => $sub?->expires_at?->toIso8601String(),
             ];

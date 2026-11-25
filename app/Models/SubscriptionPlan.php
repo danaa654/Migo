@@ -8,7 +8,7 @@ class SubscriptionPlan extends Model
 {
     public const UNITS = ['day', 'month', 'year'];
 
-    protected $fillable = ['name', 'description', 'duration_value', 'duration_unit', 'price', 'is_active', 'sort_order'];
+    protected $fillable = ['name', 'description', 'color', 'duration_value', 'duration_unit', 'price', 'is_active', 'sort_order'];
 
     protected function casts(): array
     {

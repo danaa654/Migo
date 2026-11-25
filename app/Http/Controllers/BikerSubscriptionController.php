@@ -41,11 +41,11 @@ class BikerSubscriptionController extends Controller
                 'daily_limit' => SubscriptionService::TRIAL_DAILY_LIMIT,
                 'used_today' => $subs->acceptedToday($rider),
             ] : null,
-            'paid' => $paid ? ['plan' => $paid->plan_name_snapshot, 'duration' => $paid->duration_snapshot, 'amount' => $paid->price_snapshot,
+            'paid' => $paid ? ['plan' => $paid->plan_name_snapshot, 'color' => SubscriptionPlan::whereKey($paid->subscription_plan_id)->value('color'), 'duration' => $paid->duration_snapshot, 'amount' => $paid->price_snapshot,
                 'starts_at' => $iso($paid->starts_at), 'expires_at' => $iso($paid->expires_at)] : null,
-            'next' => $next ? ['plan' => $next->plan_name_snapshot, 'starts_at' => $iso($next->starts_at), 'expires_at' => $iso($next->expires_at)] : null,
+            'next' => $next ? ['plan' => $next->plan_name_snapshot, 'color' => SubscriptionPlan::whereKey($next->subscription_plan_id)->value('color'), 'starts_at' => $iso($next->starts_at), 'expires_at' => $iso($next->expires_at)] : null,
             'plans' => SubscriptionPlan::where('is_active', true)->orderBy('sort_order')->get()->map(fn (SubscriptionPlan $p) => [
-                'id' => $p->id, 'name' => $p->name, 'description' => $p->description, 'duration' => $p->durationLabel(), 'price' => $p->price, 'monthly' => $p->monthlyEquivalent(),
+                'id' => $p->id, 'name' => $p->name, 'color' => $p->color, 'description' => $p->description, 'duration' => $p->durationLabel(), 'price' => $p->price, 'monthly' => $p->monthlyEquivalent(),
             ]),
             // A checkout that was opened in the last 30 minutes and not paid yet: the page keeps refreshing until PayMongo confirms.
             'hasPending' => SubscriptionPayment::where('rider_id', $rider->id)->where('status', 'pending')->where('created_at', '>=', now()->subMinutes(30))->exists(),

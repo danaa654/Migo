@@ -20,6 +20,7 @@ use App\Http\Controllers\CustomerBookingController;
 use App\Http\Controllers\CustomerComplaintController;
 use App\Http\Controllers\CustomerDashboardController;
 use App\Http\Controllers\CustomerProfileController;
+use App\Http\Controllers\NearbyRidersController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Registration\BikerRegistrationController;
 use App\Http\Controllers\Registration\RiderEmailOtpController;
@@ -87,6 +88,9 @@ Route::get('book', [CustomerBookingController::class, 'guest'])->name('book.gues
 
 // Fare quote shown before the customer confirms (public, read-only, nothing is saved).
 Route::get('book/quote', [CustomerBookingController::class, 'quote'])->middleware('throttle:60,1')->name('book.quote');
+
+// Anonymous nearby-rider markers for the booking map (public, read-only, throttled, no rider identity).
+Route::get('book/nearby-riders', NearbyRidersController::class)->middleware('throttle:30,1')->name('book.nearby');
 
 // Generic entry point (also Fortify's "home"): sends any signed-in user to the dashboard for their role.
 Route::middleware('auth')->get('dashboard', fn (Request $request) => redirect($request->user()->dashboardPath()));

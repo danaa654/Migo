@@ -3,6 +3,8 @@ import 'leaflet/dist/leaflet.css';
 import { ArrowUpDown, MapPin, Route, Search, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { straightLineKm } from '@/components/booking-map';
+import type { NearbyRiders } from '@/hooks/use-nearby-riders';
+import type { ServiceKey } from '@/lib/services';
 
 export type Point = { lat: number; lng: number };
 export type Mode = 'pickup' | 'destination';
@@ -26,6 +28,9 @@ type Props = {
     fill?: boolean;
     /** "Destination" for rides, "Delivery destination" for MigoDala. */
     destinationLabel?: string;
+    /** Anonymous nearby riders for the chosen service (markers only, no identity). */
+    nearby?: NearbyRiders | null;
+    nearbyService?: ServiceKey | null;
 };
 
 type Place = {
@@ -189,6 +194,8 @@ export default function LocationPicker({
     onLocating,
     fill = false,
     destinationLabel = 'Destination',
+    nearby = null,
+    nearbyService = null,
 }: Props) {
     const mapEl = useRef<HTMLDivElement>(null);
     const map = useRef<L.Map | null>(null);
@@ -197,6 +204,7 @@ export default function LocationPicker({
         destination: null,
     });
     const route = useRef<L.Polyline | null>(null);
+    const nearbyLayer = useRef<L.LayerGroup | null>(null);
     const hadBoth = useRef(false);
     const [mode, setMode] = useState<Mode>('pickup');
     const [ready, setReady] = useState(false);
@@ -341,6 +349,7 @@ export default function LocationPicker({
             map.current = null;
             markers.current = { pickup: null, destination: null };
             route.current = null;
+            nearbyLayer.current = null;
             setReady(false);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -398,6 +407,29 @@ export default function LocationPicker({
         hadBoth.current = !!(pickup && destination);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ready, pickup, destination]);
+
+    // Nearby riders: small anonymous icons, redrawn whenever a fresh answer arrives. Not clickable, so they never block picking a place.
+    useEffect(() => {
+        const m = map.current;
+        if (!ready || !m) return;
+        nearbyLayer.current ??= L.layerGroup().addTo(m);
+        const layer = nearbyLayer.current;
+        layer.clearLayers();
+        const glyph =
+            nearbyService === 'MIGOCARS' ? '🚗' : nearbyService === 'MIGODALA' ? '📦' : '🏍';
+        (nearby?.riders ?? []).forEach((r) =>
+            L.marker([r.lat, r.lng], {
+                interactive: false,
+                keyboard: false,
+                icon: L.divIcon({
+                    className: '',
+                    iconSize: [26, 26],
+                    iconAnchor: [13, 13],
+                    html: `<div style="width:26px;height:26px;border-radius:50%;background:#1B5240;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1">${glyph}</div>`,
+                }),
+            }).addTo(layer),
+        );
+    }, [ready, nearby, nearbyService]);
 
     // The map container changes height when it is enlarged.
     useEffect(() => {
@@ -510,6 +542,16 @@ export default function LocationPicker({
                     className={`w-full transition-[height] duration-300 ${fill ? 'absolute inset-0' : large ? 'h-[32rem]' : 'h-80'}`}
                     aria-label="Map for choosing pickup and destination"
                 />
+                {nearby && (
+                    <div
+                        role="status"
+                        className="absolute bottom-3 left-3 z-[1000] rounded-full bg-m-card/95 px-3.5 py-1.5 text-xs font-semibold text-m-body shadow-md backdrop-blur"
+                    >
+                        {nearby.count > 0
+                            ? `${nearby.count} ${nearby.count === 1 ? 'rider' : 'riders'} nearby${nearby.eta_minutes ? ` · about ${nearby.eta_minutes} min away` : ''}`
+                            : 'No riders nearby right now'}
+                    </div>
+                )}
                 <button
                     type="button"
                     onClick={() => setLarge(!large)}

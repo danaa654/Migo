@@ -34,6 +34,7 @@ import LocationPicker, {
 import ServiceFields from '@/components/service-fields';
 import type { ServiceData } from '@/components/service-fields';
 import ServicePicker from '@/components/service-picker';
+import { useNearbyRiders } from '@/hooks/use-nearby-riders';
 import { PACKAGE_SIZE_LABEL, serviceMeta } from '@/lib/services';
 import type { ServiceInfo, ServiceKey } from '@/lib/services';
 
@@ -775,6 +776,7 @@ export default function CustomerBook({
             ? { lat: data.destination_lat, lng: data.destination_lng }
             : null;
 
+    const nearby = useNearbyRiders(service, pickup);
     const fareState = useFareQuote(pickup, destination, service);
     const quote = fareState.quote;
 
@@ -1046,6 +1048,8 @@ export default function CustomerBook({
                                     locateRef.current = fn;
                                 }}
                                 onLocating={setLocating}
+                                nearby={nearby}
+                                nearbyService={service}
                                 fill
                             />
 

@@ -255,6 +255,33 @@ class DispatchService
     // ---------------------------------------------------------------- matching
 
     /**
+     * The one definition of "a rider who can take a new ride of this service right now". Used by dispatchRound() to send offers
+     * and by NearbyRidersService for the customer's pre-booking map, so the two can never drift apart.
+     * Joined as `riders`, `a` (rider_availability) and `l` (rider_locations); callers add their own area / offer filters.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<Rider>
+     */
+    public function eligibleRiders(ServiceType $service, int $freshSeconds)
+    {
+        return Rider::query()
+            ->join('rider_availability as a', 'a.rider_id', '=', 'riders.id')
+            ->join('rider_locations as l', 'l.rider_id', '=', 'riders.id')
+            ->whereNotNull('riders.user_id')
+            ->where('riders.application_status', 'approved')
+            ->where('riders.account_status', 'active')
+            ->where('riders.accreditation_status', 'accredited')
+            // Only riders with a running subscription / free trial are offered rides (the trial's daily limit is enforced on accept).
+            ->when(app(\App\Services\Subscriptions\SubscriptionService::class)->required(), fn ($q) => $q->whereExists(fn ($s) => $s
+                ->select(DB::raw(1))->from('rider_subscriptions as rs')->whereColumn('rs.rider_id', 'riders.id')
+                ->whereIn('rs.status', ['active', 'scheduled'])->where('rs.starts_at', '<=', now())->where('rs.expires_at', '>', now())))
+            ->where('riders.vehicle_type', $service->vehicleType()->value) // MigoCars -> 4 wheels; MigoMoto / MigoDala -> 2 wheels
+            ->where('a.is_online', true)
+            ->where('a.availability_status', RiderAvailabilityStatus::OnlineAvailable->value)
+            ->where('l.last_location_update', '>=', now()->subSeconds($freshSeconds))
+            ->whereNotIn('riders.id', Booking::whereIn('booking_status', BookingStatus::RIDER_COMMITTED)->whereNotNull('rider_id')->select('rider_id'));
+    }
+
+    /**
      * Creates offers for riders who qualify inside the booking's CURRENT radius and have NOT been offered this booking yet.
      * The unique (booking_id, rider_id) key plus insertOrIgnore make repeated rounds safe.
      */
@@ -270,24 +297,9 @@ class DispatchService
         $dLat = $radiusKm / 111.32;
         $dLng = $radiusKm / (111.32 * max(0.01, cos(deg2rad($lat))));
 
-        $candidates = Rider::query()
-            ->join('rider_availability as a', 'a.rider_id', '=', 'riders.id')
-            ->join('rider_locations as l', 'l.rider_id', '=', 'riders.id')
-            ->whereNotNull('riders.user_id')
-            ->where('riders.application_status', 'approved')
-            ->where('riders.account_status', 'active')
-            ->where('riders.accreditation_status', 'accredited')
-            // Only riders with a running subscription / free trial are offered rides (the trial's daily limit is enforced on accept).
-            ->when(app(\App\Services\Subscriptions\SubscriptionService::class)->required(), fn ($q) => $q->whereExists(fn ($s) => $s
-                ->select(DB::raw(1))->from('rider_subscriptions as rs')->whereColumn('rs.rider_id', 'riders.id')
-                ->whereIn('rs.status', ['active', 'scheduled'])->where('rs.starts_at', '<=', now())->where('rs.expires_at', '>', now())))
-            ->where('riders.vehicle_type', $b->service()->vehicleType()->value) // MigoCars -> 4 wheels; MigoMoto / MigoDala -> 2 wheels
-            ->where('a.is_online', true)
-            ->where('a.availability_status', RiderAvailabilityStatus::OnlineAvailable->value)
-            ->where('l.last_location_update', '>=', now()->subSeconds($fresh))
+        $candidates = $this->eligibleRiders($b->service(), $fresh)
             ->whereBetween('l.latitude', [$lat - $dLat, $lat + $dLat])
             ->whereBetween('l.longitude', [$lng - $dLng, $lng + $dLng])
-            ->whereNotIn('riders.id', Booking::whereIn('booking_status', BookingStatus::RIDER_COMMITTED)->whereNotNull('rider_id')->select('rider_id'))
             ->whereNotIn('riders.id', RiderBookingOffer::where('booking_id', $b->id)->select('rider_id'))
             ->get(['riders.id as rider_id', 'l.latitude', 'l.longitude']);
 
