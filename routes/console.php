@@ -25,3 +25,10 @@ Schedule::call(fn () => app(ComplaintPenaltyService::class)->liftExpiredSuspensi
     ->name('complaints:lift-suspensions')
     ->withoutOverlapping()
     ->description('Lift ended complaint suspensions');
+
+// Subscriptions: start queued renewals, mark ended trials / subscriptions as expired, send reminders (once each).
+// Booking access itself is checked live from the timestamps, so this only drives status labels and notifications.
+Schedule::command('subscriptions:tick')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->description('Subscription expiry and reminders');

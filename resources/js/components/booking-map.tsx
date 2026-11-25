@@ -38,6 +38,9 @@ export default function BookingMap({
     useEffect(() => {
         if (!el.current || (!pickup && !destination)) return;
         const map = L.map(el.current, { scrollWheelZoom: false });
+        // Wheel zoom turns on after a click on the map and off when the mouse leaves, so scrolling the page never gets stuck on it.
+        map.on('click', () => map.scrollWheelZoom.enable());
+        map.on('mouseout', () => map.scrollWheelZoom.disable());
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution:

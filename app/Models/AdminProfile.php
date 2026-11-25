@@ -38,10 +38,10 @@ class AdminProfile extends Model
      *  - staff:          creating and suspending Operations Admin / Support Staff accounts (Administrator only)
      */
     private const AREAS = [
-        self::ROLE_SUPER_ADMIN => ['dashboard', 'riders', 'subscriptions', 'bookings', 'passengers', 'passengers_manage', 'support', 'reports', 'notifications', 'settings', 'staff'],
-        self::ROLE_ADMIN => ['dashboard', 'riders', 'subscriptions', 'bookings', 'passengers', 'passengers_manage', 'support', 'reports', 'notifications', 'settings'],
-        self::ROLE_OPERATIONS => ['dashboard', 'riders', 'subscriptions', 'bookings', 'notifications'],
-        self::ROLE_SUPPORT => ['support', 'passengers'],
+        self::ROLE_SUPER_ADMIN => ['dashboard', 'riders', 'subscriptions', 'subscriptions_verify', 'subscriptions_manage', 'bookings', 'passengers', 'passengers_manage', 'support', 'reports', 'notifications', 'settings', 'staff'],
+        self::ROLE_ADMIN => ['dashboard', 'riders', 'subscriptions', 'subscriptions_verify', 'subscriptions_manage', 'bookings', 'passengers', 'passengers_manage', 'support', 'reports', 'notifications', 'settings'],
+        self::ROLE_OPERATIONS => ['dashboard', 'riders', 'subscriptions', 'subscriptions_verify', 'bookings', 'notifications'],
+        self::ROLE_SUPPORT => ['support', 'passengers', 'subscriptions'],
     ];
 
     private const LABELS = [

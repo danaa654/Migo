@@ -277,6 +277,10 @@ class DispatchService
             ->where('riders.application_status', 'approved')
             ->where('riders.account_status', 'active')
             ->where('riders.accreditation_status', 'accredited')
+            // Only riders with a running subscription / free trial are offered rides (the trial's daily limit is enforced on accept).
+            ->when(app(\App\Services\Subscriptions\SubscriptionService::class)->required(), fn ($q) => $q->whereExists(fn ($s) => $s
+                ->select(DB::raw(1))->from('rider_subscriptions as rs')->whereColumn('rs.rider_id', 'riders.id')
+                ->whereIn('rs.status', ['active', 'scheduled'])->where('rs.starts_at', '<=', now())->where('rs.expires_at', '>', now())))
             ->where('riders.vehicle_type', $b->service()->vehicleType()->value) // MigoCars -> 4 wheels; MigoMoto / MigoDala -> 2 wheels
             ->where('a.is_online', true)
             ->where('a.availability_status', RiderAvailabilityStatus::OnlineAvailable->value)
@@ -452,6 +456,12 @@ class DispatchService
             if (! $rider->fresh()->canAcceptRequests()) {
                 return $this->fail('not_eligible', 'Your account is not eligible to accept rides.');
             }
+            // Subscription / free-trial gate. The availability row is locked above, and the daily count is read with
+            // a lock, so simultaneous accepts cannot push a trial rider past the daily limit.
+            $access = app(\App\Services\Subscriptions\SubscriptionService::class)->access($rider->fresh(), lock: true);
+            if (! $access['allowed']) {
+                return $this->fail($access['code'], $access['message']);
+            }
             if (Booking::where('rider_id', $rider->id)->whereIn('booking_status', BookingStatus::RIDER_COMMITTED)->exists()) {
                 return $this->fail('rider_busy', 'You already have an active booking.');
             }
@@ -469,6 +479,8 @@ class DispatchService
             Raise::raise(E::PassengerRiderFound, $b->id, $rider->id);
             Raise::raise(E::AdminBookingAssigned, $b->id, $rider->id);
             $losers->each(fn ($l) => Raise::raise(E::RideAlreadyAccepted, $b->id, $l->rider_id, $l->id));
+
+            app(\App\Services\Subscriptions\SubscriptionService::class)->afterAccept($rider);
 
             return ['ok' => true, 'code' => 'assigned', 'message' => 'Ride accepted.', 'booking' => $b->refresh()];
         });

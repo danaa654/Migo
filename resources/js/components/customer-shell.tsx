@@ -107,29 +107,37 @@ function SidebarShell({ title, status, wide = false, children }: ShellProps) {
             >
                 <aside
                     id="customer-sidebar"
-                    className={`fixed inset-y-0 left-0 z-40 hidden w-56 flex-col overflow-hidden border-r border-m-line bg-m-card transition-transform duration-200 lg:flex ${collapsed ? 'lg:-translate-x-full' : ''}`}
+                    className={`fixed inset-y-0 left-0 z-40 hidden w-56 flex-col overflow-hidden border-r border-m-line bg-m-page2 transition-[width] duration-200 lg:flex ${collapsed ? 'lg:w-16' : 'lg:w-56'}`}
                     aria-label="Customer sidebar"
-                    inert={collapsed || undefined}
                 >
+                    {/* Bus-stop artwork: day version (public/img/sidebar-P.png) in light mode, night version (sidebar-PD.png) in dark mode. */}
                     <img
                         src="/img/sidebar-P.png"
                         alt=""
                         aria-hidden
                         draggable={false}
-                        className="pointer-events-none absolute inset-0 size-full object-cover object-left-bottom select-none dark:opacity-10"
+                        className={`pointer-events-none absolute inset-0 size-full object-cover object-left-bottom select-none dark:hidden ${collapsed ? 'lg:hidden' : ''}`}
                     />
+                    <img
+                        src="/img/sidebar-PD.png"
+                        alt=""
+                        aria-hidden
+                        draggable={false}
+                        className={`pointer-events-none absolute inset-0 hidden size-full object-cover object-left-bottom select-none dark:block ${collapsed ? 'lg:hidden' : ''}`}
+                    />
+                    <div aria-hidden className={`pointer-events-none absolute inset-0 hidden bg-[#08100D]/35 dark:block ${collapsed ? 'lg:hidden' : ''}`} />
                     <div className="relative z-10">
                         <Link
                             href="/customer/dashboard"
                             aria-label="Migo customer dashboard"
-                            className={`flex items-center gap-3 rounded-br-[1.5rem] bg-linear-to-br from-[#1B5240] via-[#17483A] to-[#0F2F25] px-3 py-3 shadow-md ${ring}`}
+                            className={`flex items-center gap-3 rounded-br-[1.5rem] bg-linear-to-br from-[#1B5240] via-[#17483A] to-[#0F2F25] px-3 py-3 shadow-md ${ring} ${collapsed ? 'lg:justify-center lg:rounded-br-2xl lg:px-2' : ''}`}
                         >
                             <img
                                 src="/favi.png"
                                 alt=""
                                 className="size-10 shrink-0 rounded-lg bg-white object-contain p-0.5 shadow-sm ring-2 ring-white/30"
                             />
-                            <span className="min-w-0 leading-tight">
+                            <span className={`min-w-0 leading-tight ${collapsed ? 'lg:hidden' : ''}`}>
                                 <span className="block text-base font-extrabold tracking-wider text-white">
                                     MIGO
                                 </span>
@@ -150,12 +158,12 @@ function SidebarShell({ title, status, wide = false, children }: ShellProps) {
                                     <span
                                         key={n.label}
                                         aria-disabled="true"
-                                        title="Coming soon"
-                                        className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold text-m-faint"
+                                        title={`${n.label} (coming soon)`}
+                                        className={`flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold text-m-faint ${collapsed ? 'lg:justify-center lg:px-0' : ''}`}
                                     >
-                                        <Icon className="size-4" aria-hidden />
-                                        <span className="flex-1">{n.label}</span>
-                                        <span className="rounded bg-m-soft px-1.5 py-0.5 text-[9px] font-semibold tracking-wide uppercase">
+                                        <Icon className="size-4 shrink-0" aria-hidden />
+                                        <span className={`flex-1 ${collapsed ? 'lg:hidden' : ''}`}>{n.label}</span>
+                                        <span className={`rounded bg-m-soft px-1.5 py-0.5 text-[9px] font-semibold tracking-wide uppercase ${collapsed ? 'lg:hidden' : ''}`}>
                                             Soon
                                         </span>
                                     </span>
@@ -166,8 +174,9 @@ function SidebarShell({ title, status, wide = false, children }: ShellProps) {
                                 <Link
                                     key={n.label}
                                     href={n.href}
+                                    title={n.label}
                                     aria-current={on ? 'page' : undefined}
-                                    className={`relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors ${ring} ${
+                                    className={`relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors ${ring} ${collapsed ? 'lg:justify-center lg:px-0' : ''} ${
                                         on
                                             ? 'bg-m-mint/90 font-bold text-m-accent shadow-sm'
                                             : 'text-m-ink hover:bg-m-mint/60'
@@ -176,19 +185,19 @@ function SidebarShell({ title, status, wide = false, children }: ShellProps) {
                                     {on && (
                                         <span className="absolute inset-y-2 -left-2.5 w-1 rounded-r-full bg-m-forest" aria-hidden />
                                     )}
-                                    <Icon className="size-4" aria-hidden />
-                                    {n.label}
+                                    <Icon className="size-4 shrink-0" aria-hidden />
+                                    <span className={collapsed ? 'lg:hidden' : ''}>{n.label}</span>
                                 </Link>
                             );
                         })}
                     </nav>
 
-                    <div className="relative z-10 space-y-2.5 bg-gradient-to-t from-m-card via-m-card/90 to-transparent p-3 pt-8">
-                        <div className="flex items-center gap-3">
+                    <div className="relative z-10 space-y-2.5 bg-gradient-to-t from-m-page2 via-m-page2/85 to-transparent p-3 pt-8 dark:from-[#08100D]/85 dark:via-[#08100D]/40">
+                        <div className={`flex items-center gap-3 ${collapsed ? 'lg:justify-center' : ''}`} title={collapsed ? name : undefined}>
                             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-m-solid text-xs font-semibold text-white" aria-hidden>
                                 {initial}
                             </span>
-                            <span className="min-w-0 leading-tight">
+                            <span className={`min-w-0 leading-tight ${collapsed ? 'lg:hidden' : ''}`}>
                                 <span className="block truncate text-[13px] font-bold text-m-ink" title={name}>
                                     {name}
                                 </span>
@@ -200,9 +209,11 @@ function SidebarShell({ title, status, wide = false, children }: ShellProps) {
                         <button
                             type="button"
                             onClick={logout}
-                            className={`flex w-full items-center justify-center gap-2 rounded-lg border border-m-red/30 bg-m-card/90 py-1.5 text-[13px] font-semibold text-m-red shadow-sm transition-colors hover:bg-m-red/5 ${ring}`}
+                            title="Logout"
+                            className={`flex w-full items-center justify-center gap-2 rounded-lg border border-m-red/30 bg-m-page2/90 py-1.5 dark:bg-[#08100D]/70 text-[13px] font-semibold text-m-red shadow-sm transition-colors hover:bg-m-red/5 ${ring}`}
                         >
-                            <LogOut className="size-3.5" aria-hidden /> Logout
+                            <LogOut className="size-3.5" aria-hidden />
+                            <span className={collapsed ? 'lg:hidden' : ''}>Logout</span>
                         </button>
                     </div>
                 </aside>
@@ -218,7 +229,7 @@ function SidebarShell({ title, status, wide = false, children }: ShellProps) {
                 </svg>
 
                 <div
-                    className={`transition-[padding] duration-200 ${collapsed ? 'lg:pl-0' : 'lg:pl-56'}`}
+                    className={`transition-[padding] duration-200 ${collapsed ? 'lg:pl-16' : 'lg:pl-56'}`}
                 >
                     <header className="sticky top-0 z-30 border-b border-m-line bg-m-card/95 backdrop-blur">
                         <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
@@ -234,7 +245,7 @@ function SidebarShell({ title, status, wide = false, children }: ShellProps) {
                                 >
                                     <Menu className="size-5" aria-hidden />
                                 </button>
-                                <Link href="/customer/dashboard" aria-label="Migo customer dashboard" className={`flex items-center gap-2 ${collapsed ? '' : 'lg:hidden'} ${ring}`}>
+                                <Link href="/customer/dashboard" aria-label="Migo customer dashboard" className={`flex items-center gap-2 lg:hidden ${ring}`}>
                                     <img src="/favi.png" alt="" className="size-8 object-contain" />
                                     <span className="text-sm font-extrabold tracking-wide text-m-accent">MIGO</span>
                                 </Link>

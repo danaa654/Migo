@@ -155,16 +155,23 @@ export default function AdminLayout({
                 )}
 
                 <aside
-                    className={`fixed inset-y-0 left-0 z-40 flex w-56 flex-col overflow-hidden border-r border-m-line bg-m-card shadow-xl transition-transform lg:translate-x-0 lg:shadow-none ${drawer ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'lg:w-16' : 'lg:w-56'}`}
+                    className={`fixed inset-y-0 left-0 z-40 flex w-56 flex-col overflow-hidden border-r border-m-line bg-m-page2 shadow-xl transition-transform lg:translate-x-0 lg:shadow-none ${drawer ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'lg:w-16' : 'lg:w-56'}`}
                     aria-label="Sidebar"
                 >
-                    {/* Sidebar artwork (public/img/side.png): fills the sidebar height; the right edge of the file is cropped out. */}
+                    {/* Sidebar artwork: public/img/side.png in light mode, public/img/sideD.png in dark mode. */}
                     <img
                         src="/img/side.png"
                         alt=""
                         aria-hidden
                         draggable={false}
-                        className={`pointer-events-none absolute inset-0 size-full object-cover object-left select-none dark:opacity-10 ${collapsed ? 'lg:hidden' : ''}`}
+                        className={`pointer-events-none absolute inset-0 size-full object-cover object-left select-none dark:hidden ${collapsed ? 'lg:hidden' : ''}`}
+                    />
+                    <img
+                        src="/img/sideD.png"
+                        alt=""
+                        aria-hidden
+                        draggable={false}
+                        className={`pointer-events-none absolute inset-0 hidden size-full object-cover object-left select-none dark:block ${collapsed ? 'lg:hidden' : ''}`}
                     />
 
                     <div className="relative z-10 p-0">
@@ -223,7 +230,7 @@ export default function AdminLayout({
                                     title={label}
                                     onClick={() => setDrawer(false)}
                                     aria-current={on ? 'page' : undefined}
-                                    className={`relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${ring} ${on ? 'bg-m-mint font-semibold text-m-accent shadow-sm' : 'text-m-body hover:bg-m-mint/60'} ${collapsed ? 'lg:justify-center lg:px-0' : ''}`}
+                                    className={`relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors ${ring} ${on ? 'bg-m-mint/90 font-bold text-m-accent shadow-sm' : 'text-m-ink hover:bg-m-mint/60'} ${collapsed ? 'lg:justify-center lg:px-0' : ''}`}
                                 >
                                     {on && (
                                         <span
@@ -249,7 +256,7 @@ export default function AdminLayout({
                         })}
                     </nav>
 
-                    <div className="relative z-10 p-3">
+                    <div className="relative z-10 p-3 dark:bg-gradient-to-t dark:from-[#08100D]/70 dark:to-transparent">
                         <div
                             className={`flex items-center gap-3 ${collapsed ? 'lg:justify-center' : ''}`}
                         >

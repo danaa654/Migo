@@ -67,6 +67,11 @@ class RiderPresenceService
     /** @return array{ok: bool, code: string, message: string} */
     public function goOnline(Rider $rider): array
     {
+        $access = app(\App\Services\Subscriptions\SubscriptionService::class)->access($rider);
+        if (! $access['allowed']) {
+            return $this->fail($access['code'], $access['message']);
+        }
+
         return DB::transaction(function () use ($rider) {
             $loc = RiderLocation::where('rider_id', $rider->id)->first();
             if (! $loc || $loc->last_location_update->timestamp < now()->timestamp - $this->freshSeconds()) {

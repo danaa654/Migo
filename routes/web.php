@@ -37,6 +37,11 @@ Route::inertia('/', 'welcome')->name('home');
 Route::inertia('privacy', 'legal', ['page' => 'privacy'])->name('legal.privacy');
 Route::inertia('terms', 'legal', ['page' => 'terms'])->name('legal.terms');
 
+// Payment provider -> MIGO confirmations (Xendit default, PayMongo optional). Public (no session), protected by the
+// provider's token / signature check in each controller; excluded from CSRF in bootstrap/app.php.
+Route::post('webhooks/paymongo', \App\Http\Controllers\PayMongoWebhookController::class)->middleware('throttle:120,1')->name('webhooks.paymongo');
+Route::post('webhooks/xendit', \App\Http\Controllers\XenditWebhookController::class)->middleware('throttle:120,1')->name('webhooks.xendit');
+
 // Public login. GET /login (Customer: Google / phone OTP, Rider: email + password) and POST /login are served by Fortify.
 // The account type is never chosen by the user: it comes from users.role, and the response redirects
 // to the matching dashboard (see App\Http\Responses\LoginResponse).
@@ -114,7 +119,6 @@ Route::middleware(['auth', 'role:customer'])->prefix('customer')->group(function
     Route::get('profile', [CustomerProfileController::class, 'edit'])->name('customer.profile');
     Route::patch('profile', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
     Route::put('profile/password', [CustomerProfileController::class, 'updatePassword'])->name('customer.profile.password');
-    Route::put('profile/password/set', [CustomerProfileController::class, 'setPassword'])->middleware('throttle:10,1')->name('customer.profile.password.set');
 
     // Add or confirm the phone number with an SMS code (same OTP engine as the login).
     Route::post('profile/phone/send', [CustomerPhoneController::class, 'send'])->middleware('throttle:20,1')->name('customer.profile.phone.send');
@@ -133,6 +137,10 @@ Route::middleware(['auth', 'role:biker'])->prefix('biker')->group(function () {
     // Real-time dispatch (rider side). Accredited, active bikers only. All decisions are made by the server.
     // Support Center for riders: complaints about passengers, support requests and incident reports (accredited riders only,
     // same as the trip history they pick the trip from).
+    // Subscription / free trial: accredited riders only. An expired rider stays accredited, so this page stays open for renewal.
+    Route::get('subscription', [\App\Http\Controllers\BikerSubscriptionController::class, 'index'])->middleware('biker.approved')->name('biker.subscription');
+    Route::post('subscription/payments', [\App\Http\Controllers\BikerSubscriptionController::class, 'store'])->middleware(['biker.approved', 'throttle:10,1'])->name('biker.subscription.pay');
+
     Route::get('complaints', [BikerComplaintController::class, 'index'])->middleware('biker.approved')->name('biker.complaints');
     Route::post('complaints', [BikerComplaintController::class, 'store'])->middleware(['biker.approved', 'throttle:10,1'])->name('biker.complaints.store');
 
@@ -241,13 +249,17 @@ Route::middleware(['auth', EnsureActiveAdmin::class])->prefix('admin')->group(fu
         });
     });
 
-    // Modules built in later phases render a placeholder inside the admin layout. Each one is tied to an area
-    // (see AdminProfile::AREAS): Operations Admin get subscriptions.
-    foreach ([
-        'subscriptions' => ['Subscription Management', 'subscriptions'],
-    ] as $path => [$title, $area]) {
-        Route::inertia($path, 'admin/placeholder', ['title' => $title])->middleware("admin.area:{$area}");
-    }
+    // Subscription Management. Read: "subscriptions" area; plans: "subscriptions_manage" (Administrator).
+    // Payments are confirmed by the PayMongo webhook, so admins can only view them. Enforced here, not in React.
+    Route::prefix('subscriptions')->middleware('admin.area:subscriptions')->name('admin.subscriptions.')->group(function () {
+        $c = \App\Http\Controllers\Admin\SubscriptionManagementController::class;
+        Route::get('/', [$c, 'index'])->name('index');
+        Route::middleware(['admin.area:subscriptions_manage', 'throttle:20,1'])->group(function () use ($c) {
+            Route::post('plans', [$c, 'storePlan'])->name('plans.store');
+            Route::put('plans/{plan}', [$c, 'updatePlan'])->whereNumber('plan')->name('plans.update');
+            Route::post('plans/{plan}/toggle', [$c, 'togglePlan'])->whereNumber('plan')->name('plans.toggle');
+        });
+    });
 });
 
 Route::prefix('{current_team}')

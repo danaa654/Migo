@@ -5,6 +5,7 @@ import {
     ArrowUpDown,
     ChevronLeft,
     ChevronRight,
+    MoreHorizontal,
     PauseCircle,
     Search,
     SearchX,
@@ -15,15 +16,23 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
-    ActionButtons,
     PassengerActionDialog,
     PassengerStatusBadge,
+    actionDefs,
+    allowedActions,
     displayName,
     methodsText,
     type PassengerAction,
     type PassengerRef,
 } from '@/components/admin/passenger-shared';
-import { Avatar, shortId } from '@/components/admin/rider-shared';
+import { Avatar } from '@/components/admin/rider-shared';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import AdminLayout, { formatDate } from '@/layouts/admin-layout';
 
 type Row = {
@@ -64,8 +73,11 @@ const ring =
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-m-accent';
 const control =
     'rounded-lg border border-m-line bg-m-page2 px-3 py-2.5 text-sm outline-none transition-colors focus:border-m-accent focus:ring-2 focus:ring-m-accent/20';
-const th = 'px-4 py-2.5';
-const td = 'px-4 py-3 align-middle';
+const th = 'px-4 py-3 whitespace-nowrap';
+const td = 'px-4 py-3.5 align-middle';
+
+/** Passenger IDs are time-ordered, so the first characters are identical for everyone. Show the tail instead. */
+const idTail = (id: string) => id.slice(-8).toUpperCase();
 
 const sortOptions: [string, string, string][] = [
     ['created_at', 'desc', 'Newest registered'],
@@ -182,18 +194,50 @@ export default function PassengerIndex({ stats, passengers, filters, canManage }
         return [...set].sort((a, b) => a - b);
     })();
 
-    const viewBtn = (r: Row) => (
+    const viewBtn = (r: Row, full = false) => (
         <Link
             href={`${BASE}/${r.id}`}
-            className={`inline-block rounded-md border border-m-accent px-3 py-1.5 text-xs font-medium text-m-accent hover:bg-m-mint ${ring}`}
+            className={`inline-flex items-center justify-center rounded-md border border-m-accent px-3 py-1.5 text-xs font-medium whitespace-nowrap text-m-accent hover:bg-m-mint ${full ? 'flex-1' : ''} ${ring}`}
         >
-            View Details
+            View
         </Link>
     );
-    const actions = (r: Row) =>
-        canManage && (
-            <ActionButtons passenger={r} onAction={(a) => setDialog({ passenger: r, action: a })} />
+
+    /** Suspend / deactivate / reactivate live in one menu so every row has the same, single-line action area. */
+    const moreMenu = (r: Row) => {
+        const items = canManage ? allowedActions(r.account_status) : [];
+        if (items.length === 0) return null;
+        return (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <button
+                        type="button"
+                        aria-label={`More actions for ${displayName(r)}`}
+                        className={`inline-flex size-8 items-center justify-center rounded-md border border-m-line text-m-muted hover:bg-m-page hover:text-m-ink data-[state=open]:bg-m-page ${ring}`}
+                    >
+                        <MoreHorizontal className="size-4" aria-hidden />
+                    </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-44">
+                    {items.map((a, i) => {
+                        const Icon = actionDefs[a].icon;
+                        return (
+                            <div key={a}>
+                                {a === 'deactivate' && i > 0 && <DropdownMenuSeparator />}
+                                <DropdownMenuItem
+                                    onSelect={() => setDialog({ passenger: r, action: a })}
+                                    className={`cursor-pointer gap-2 ${a === 'deactivate' ? 'text-m-red focus:text-m-red' : ''}`}
+                                >
+                                    <Icon className="size-4" aria-hidden />
+                                    {actionDefs[a].label}
+                                </DropdownMenuItem>
+                            </div>
+                        );
+                    })}
+                </DropdownMenuContent>
+            </DropdownMenu>
         );
+    };
 
     return (
         <AdminLayout title="Passenger Management">
@@ -281,48 +325,58 @@ export default function PassengerIndex({ stats, passengers, filters, canManage }
                 ) : (
                     <>
                         <div className="hidden overflow-x-auto md:block">
-                            <table className="w-full min-w-[1100px] text-left text-sm">
+                            <table className="w-full min-w-[980px] text-left text-sm">
                                 <thead className="bg-m-page text-xs font-semibold text-m-muted">
                                     <tr>
-                                        <th scope="col" className={th}>Passenger ID</th>
+                                        <th scope="col" className={th}>ID</th>
                                         <SortHead col="full_name">Passenger</SortHead>
                                         <SortHead col="phone">Contact</SortHead>
-                                        <th scope="col" className={th}>Sign-in</th>
                                         <SortHead col="bookings_count">Trips</SortHead>
-                                        <SortHead col="last_booking_at">Last Booking</SortHead>
+                                        <SortHead col="last_booking_at">Last booking</SortHead>
                                         <SortHead col="created_at">Registered</SortHead>
-                                        <SortHead col="account_status">Account</SortHead>
-                                        <th scope="col" className={th}>Actions</th>
+                                        <SortHead col="account_status">Status</SortHead>
+                                        <th scope="col" className={`${th} text-right`}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-m-line">
                                     {passengers.data.map((r) => (
                                         <tr key={r.id} className="transition-colors hover:bg-m-page/60">
-                                            <td className={`${td} font-mono text-xs`} title={r.id}>{shortId(r.id)}</td>
+                                            <td className={`${td} font-mono text-xs text-m-muted`} title={r.id}>
+                                                {idTail(r.id)}
+                                            </td>
                                             <td className={td}>
                                                 <div className="flex items-center gap-3">
                                                     <Avatar name={r.full_name ?? ''} url={null} />
                                                     <div className="min-w-0">
-                                                        <p className={`truncate font-medium ${r.full_name ? '' : 'text-m-muted italic'}`}>{displayName(r)}</p>
-                                                        {r.email && <p className="text-xs break-all text-m-muted">{r.email}</p>}
+                                                        <Link
+                                                            href={`${BASE}/${r.id}`}
+                                                            className={`block truncate font-medium hover:text-m-accent ${r.full_name ? '' : 'text-m-muted italic'} ${ring}`}
+                                                        >
+                                                            {displayName(r)}
+                                                        </Link>
+                                                        <p className="truncate text-xs text-m-muted">{r.email ?? 'No email'}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className={`${td} whitespace-nowrap`}>{r.phone ?? '—'}</td>
-                                            <td className={td}>{methodsText(r.sign_in_methods)}</td>
                                             <td className={`${td} whitespace-nowrap`}>
-                                                <span className="font-medium">{r.bookings_count}</span>
-                                                <span className="text-xs text-m-muted">
-                                                    {' '}· {r.completed_count} done · {r.cancelled_count} cancelled
-                                                </span>
+                                                <p>{r.phone ?? '—'}</p>
+                                                <p className="text-xs text-m-muted">{methodsText(r.sign_in_methods)}</p>
                                             </td>
-                                            <td className={`${td} whitespace-nowrap`}>{formatDate(r.last_booking_at)}</td>
+                                            <td className={`${td} whitespace-nowrap`}>
+                                                <p className="font-semibold tabular-nums">{r.bookings_count}</p>
+                                                <p className="text-xs text-m-muted tabular-nums">
+                                                    {r.completed_count} done, {r.cancelled_count} cancelled
+                                                </p>
+                                            </td>
+                                            <td className={`${td} whitespace-nowrap ${r.last_booking_at ? '' : 'text-m-muted'}`}>
+                                                {formatDate(r.last_booking_at)}
+                                            </td>
                                             <td className={`${td} whitespace-nowrap`}>{formatDate(r.created_at)}</td>
                                             <td className={td}><PassengerStatusBadge status={r.account_status} /></td>
                                             <td className={td}>
-                                                <div className="flex flex-wrap gap-1.5">
+                                                <div className="flex items-center justify-end gap-1.5">
                                                     {viewBtn(r)}
-                                                    {actions(r)}
+                                                    {moreMenu(r)}
                                                 </div>
                                             </td>
                                         </tr>
@@ -338,7 +392,7 @@ export default function PassengerIndex({ stats, passengers, filters, canManage }
                                         <Avatar name={r.full_name ?? ''} url={null} size="size-11" />
                                         <div className="min-w-0 flex-1">
                                             <p className={`truncate font-semibold ${r.full_name ? '' : 'text-m-muted italic'}`}>{displayName(r)}</p>
-                                            <p className="font-mono text-xs text-m-muted" title={r.id}>{shortId(r.id)}</p>
+                                            <p className="font-mono text-xs text-m-muted" title={r.id}>{idTail(r.id)}</p>
                                         </div>
                                         <PassengerStatusBadge status={r.account_status} />
                                     </div>
@@ -346,17 +400,15 @@ export default function PassengerIndex({ stats, passengers, filters, canManage }
                                         <dt className="text-m-muted">Email</dt>
                                         <dd className="break-all">{r.email ?? '—'}</dd>
                                         <dt className="text-m-muted">Contact</dt>
-                                        <dd>{r.phone ?? '—'}</dd>
-                                        <dt className="text-m-muted">Sign-in</dt>
-                                        <dd>{methodsText(r.sign_in_methods)}</dd>
+                                        <dd>{r.phone ?? '—'} <span className="text-xs text-m-muted">({methodsText(r.sign_in_methods)})</span></dd>
                                         <dt className="text-m-muted">Trips</dt>
                                         <dd>{r.bookings_count} ({r.completed_count} done, {r.cancelled_count} cancelled)</dd>
                                         <dt className="text-m-muted">Last booking</dt>
                                         <dd>{formatDate(r.last_booking_at)}</dd>
                                     </dl>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {viewBtn(r)}
-                                        {actions(r)}
+                                    <div className="flex items-center gap-1.5">
+                                        {viewBtn(r, true)}
+                                        {moreMenu(r)}
                                     </div>
                                 </li>
                             ))}

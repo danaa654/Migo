@@ -33,6 +33,8 @@ const ICON = '/favi.png';
 const WELCOME_LOGO = '/welcome-logo.jpg';
 // Hero background in /public.
 const HERO_BG = '/background.png';
+// Dark mode uses its own artwork (public/bgD.png) instead of dimming the light one.
+const HERO_BG_DARK = '/bgD.png';
 // Optional: transparent PNG of the rider on the motorcycle. Put it in /public as rider.png. Hidden automatically if missing.
 const HERO_RIDER = '/rider.png';
 
@@ -1046,12 +1048,21 @@ export default function Welcome() {
                         id="home"
                         className="relative overflow-hidden bg-m-page2"
                     >
-                        {/* background image */}
+                        {/* background image: public/background.png in light mode, public/bgD.png in dark mode */}
                         <div
                             aria-hidden
-                            className="absolute inset-0 bg-no-repeat dark:brightness-[.4]"
+                            className="absolute inset-0 bg-no-repeat dark:hidden"
                             style={{
                                 backgroundImage: `url(${HERO_BG})`,
+                                backgroundSize: '100% auto',
+                                backgroundPosition: 'center bottom',
+                            }}
+                        />
+                        <div
+                            aria-hidden
+                            className="absolute inset-0 hidden bg-no-repeat dark:block"
+                            style={{
+                                backgroundImage: `url(${HERO_BG_DARK})`,
                                 backgroundSize: '100% auto',
                                 backgroundPosition: 'center bottom',
                             }}

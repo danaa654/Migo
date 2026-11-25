@@ -5,6 +5,8 @@ import {
     CircleCheck,
     Clock,
     MessageSquareWarning,
+    MoreHorizontal,
+    ShieldAlert,
     Search,
     SearchCheck,
     SearchX,
@@ -13,16 +15,23 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
-    ActionButtons,
     ComplaintActionDialog,
     ComplaintStatusBadge,
     ReporterBadge,
     SafetyBadge,
     TypeBadge,
+    actionDefs,
+    allowedActions,
     type ComplaintAction,
     type ComplaintRef,
 } from '@/components/admin/complaint-shared';
-import { shortId } from '@/components/admin/rider-shared';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import AdminLayout, { formatDate } from '@/layouts/admin-layout';
 
 type Row = {
@@ -76,8 +85,19 @@ const ring =
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-m-accent';
 const control =
     'rounded-lg border border-m-line bg-m-page2 px-3 py-2.5 text-sm outline-none transition-colors focus:border-m-accent focus:ring-2 focus:ring-m-accent/20';
-const th = 'px-4 py-2.5 font-semibold';
-const td = 'px-4 py-3 align-middle';
+const th = 'px-4 py-3 font-semibold whitespace-nowrap';
+const td = 'px-4 py-3.5 align-middle';
+
+/** Report IDs are time-ordered, so the first characters repeat. The tail is what tells them apart. */
+const idTail = (id: string) => id.slice(-8).toUpperCase();
+/** Time of day for a DB timestamp (stored in UTC), shown under the date. */
+const timeOf = (s?: string | null) => {
+    if (!s) return '';
+    const d = new Date(s.replace(' ', 'T') + (s.includes('T') ? '' : 'Z'));
+    return isNaN(d.getTime())
+        ? ''
+        : d.toLocaleTimeString('en-PH', { timeStyle: 'short' });
+};
 
 const sortOptions: [string, string, string][] = [
     ['priority', 'desc', 'Needs attention first'],
@@ -169,20 +189,52 @@ export default function ComplaintIndex({ stats, complaints, categories, filters 
         return [...set].sort((a, b) => a - b);
     })();
 
-    const viewBtn = (r: Row) => (
+    const viewBtn = (r: Row, full = false) => (
         <Link
             href={`${BASE}/${r.id}`}
-            className={`inline-block rounded-md border border-m-accent px-3 py-1.5 text-xs font-medium text-m-accent hover:bg-m-mint ${ring}`}
+            className={`inline-flex items-center justify-center rounded-md border border-m-accent px-3 py-1.5 text-xs font-medium whitespace-nowrap text-m-accent hover:bg-m-mint ${full ? 'flex-1' : ''} ${ring}`}
         >
             Review
         </Link>
     );
-    const actions = (r: Row) => (
-        <ActionButtons
-            complaint={{ id: r.id, status: r.status }}
-            onAction={(a) => setDialog({ complaint: { id: r.id, status: r.status }, action: a })}
-        />
-    );
+
+    /** Start review / Resolve / Reject share one menu, so every row has a single-line action area. */
+    const moreMenu = (r: Row) => {
+        const items = allowedActions(r.status);
+        if (items.length === 0) return null;
+        return (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <button
+                        type="button"
+                        aria-label={`More actions for ${r.category_label} report`}
+                        className={`inline-flex size-8 items-center justify-center rounded-md border border-m-line text-m-muted hover:bg-m-page hover:text-m-ink data-[state=open]:bg-m-page ${ring}`}
+                    >
+                        <MoreHorizontal className="size-4" aria-hidden />
+                    </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-44">
+                    {items.map((a, i) => {
+                        const Icon = actionDefs[a].icon;
+                        return (
+                            <div key={a}>
+                                {a === 'reject' && i > 0 && <DropdownMenuSeparator />}
+                                <DropdownMenuItem
+                                    onSelect={() =>
+                                        setDialog({ complaint: { id: r.id, status: r.status }, action: a })
+                                    }
+                                    className={`cursor-pointer gap-2 ${a === 'reject' ? 'text-m-red focus:text-m-red' : ''}`}
+                                >
+                                    <Icon className="size-4" aria-hidden />
+                                    {actionDefs[a].label}
+                                </DropdownMenuItem>
+                            </div>
+                        );
+                    })}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        );
+    };
 
     return (
         <AdminLayout title="Support Center">
@@ -194,12 +246,19 @@ export default function ComplaintIndex({ stats, complaints, categories, filters 
             </div>
 
             {stats.open_incidents > 0 && (
-                <p role="status" className="mb-4 rounded-lg border border-m-red/30 bg-m-red/5 px-4 py-3 text-sm font-medium text-m-redtext">
-                    {stats.open_incidents} open incident {stats.open_incidents === 1 ? 'report needs' : 'reports need'} attention (safety).{' '}
-                    <button type="button" onClick={() => visit({ kind: 'incident', status: null })} className={`underline ${ring}`}>
+                <div role="status" className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-m-red/30 bg-m-red/5 px-4 py-3 text-sm text-m-redtext">
+                    <ShieldAlert className="size-5 shrink-0" aria-hidden />
+                    <p className="font-medium">
+                        {stats.open_incidents} open incident {stats.open_incidents === 1 ? 'report needs' : 'reports need'} attention (safety).
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => visit({ kind: 'incident', status: null })}
+                        className={`ml-auto rounded-md border border-m-red/40 px-3 py-1 text-xs font-medium hover:bg-m-red/10 ${ring}`}
+                    >
                         Show them
                     </button>
-                </p>
+                </div>
             )}
 
             <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -277,42 +336,57 @@ export default function ComplaintIndex({ stats, complaints, categories, filters 
                 ) : (
                     <>
                         <div className="hidden overflow-x-auto md:block">
-                            <table className="w-full min-w-[1100px] text-left text-sm">
+                            <table className="w-full min-w-[980px] text-left text-sm">
                                 <thead className="bg-m-page text-xs text-m-muted">
                                     <tr>
-                                        <th scope="col" className={th}>Report ID</th>
-                                        <th scope="col" className={th}>Type</th>
-                                        <th scope="col" className={th}>Filed by</th>
-                                        <th scope="col" className={th}>Category</th>
+                                        <th scope="col" className={th}>ID</th>
+                                        <th scope="col" className={th}>Report</th>
                                         <th scope="col" className={th}>Details</th>
+                                        <th scope="col" className={th}>Filed by</th>
                                         <th scope="col" className={th}>Filed</th>
                                         <th scope="col" className={th}>Status</th>
-                                        <th scope="col" className={th}>Actions</th>
+                                        <th scope="col" className={`${th} text-right`}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-m-line">
                                     {complaints.data.map((r) => (
                                         <tr key={r.id} className="transition-colors hover:bg-m-page/60">
-                                            <td className={`${td} font-mono text-xs`} title={r.id}>{shortId(r.id)}</td>
+                                            <td
+                                                className={`${td} border-l-[3px] font-mono text-xs text-m-muted ${r.is_safety ? 'border-l-m-red' : 'border-l-transparent'}`}
+                                                title={r.id}
+                                            >
+                                                {idTail(r.id)}
+                                            </td>
                                             <td className={td}>
-                                                <div className="flex flex-wrap items-center gap-1">
+                                                <Link
+                                                    href={`${BASE}/${r.id}`}
+                                                    className={`font-medium hover:text-m-accent ${ring}`}
+                                                >
+                                                    {r.category_label}
+                                                </Link>
+                                                <div className="mt-1 flex flex-wrap items-center gap-1">
                                                     <TypeBadge type={r.report_type} />
                                                     {r.is_safety && <SafetyBadge />}
                                                 </div>
                                             </td>
-                                            <td className={td}>
-                                                <p className={`font-medium ${r.reporter_name ? '' : 'text-m-muted italic'}`}>{r.reporter_name ?? 'Unknown'}</p>
-                                                <ReporterBadge type={r.reporter_type} />
-                                            </td>
-                                            <td className={td}>{r.category_label}</td>
-                                            <td className={`${td} max-w-xs`}>
+                                            <td className={`${td} max-w-sm`}>
                                                 <p className="line-clamp-2">{r.excerpt}</p>
                                                 {r.has_booking && <p className="mt-0.5 text-xs text-m-muted">Linked to a booking</p>}
                                             </td>
-                                            <td className={`${td} whitespace-nowrap`}>{formatDate(r.created_at, true)}</td>
+                                            <td className={td}>
+                                                <p className={`font-medium whitespace-nowrap ${r.reporter_name ? '' : 'text-m-muted italic'}`}>{r.reporter_name ?? 'Unknown'}</p>
+                                                <div className="mt-1"><ReporterBadge type={r.reporter_type} /></div>
+                                            </td>
+                                            <td className={`${td} whitespace-nowrap`} title={formatDate(r.created_at, true)}>
+                                                <p>{formatDate(r.created_at)}</p>
+                                                <p className="text-xs text-m-muted">{timeOf(r.created_at)}</p>
+                                            </td>
                                             <td className={td}><ComplaintStatusBadge status={r.status} /></td>
                                             <td className={td}>
-                                                <div className="flex flex-wrap gap-1.5">{viewBtn(r)}{actions(r)}</div>
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    {viewBtn(r)}
+                                                    {moreMenu(r)}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -322,7 +396,7 @@ export default function ComplaintIndex({ stats, complaints, categories, filters 
 
                         <ul className="divide-y divide-m-line md:hidden">
                             {complaints.data.map((r) => (
-                                <li key={r.id} className="space-y-2 p-4">
+                                <li key={r.id} className={`space-y-2 border-l-[3px] p-4 ${r.is_safety ? 'border-l-m-red' : 'border-l-transparent'}`}>
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
                                             <p className="flex flex-wrap items-center gap-1.5 font-semibold">
@@ -337,7 +411,7 @@ export default function ComplaintIndex({ stats, complaints, categories, filters 
                                         <ComplaintStatusBadge status={r.status} />
                                     </div>
                                     <p className="line-clamp-3 text-sm">{r.excerpt}</p>
-                                    <div className="flex flex-wrap gap-1.5">{viewBtn(r)}{actions(r)}</div>
+                                    <div className="flex items-center gap-1.5">{viewBtn(r, true)}{moreMenu(r)}</div>
                                 </li>
                             ))}
                         </ul>

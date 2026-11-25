@@ -25,6 +25,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        // Payment providers post confirmations here without a browser session; they are verified by signature instead.
+        $middleware->validateCsrfTokens(except: ['webhooks/paymongo', 'webhooks/xendit']);
+
         $middleware->alias([
             'role' => EnsureRole::class,
             'admin.area' => EnsureAdminArea::class,

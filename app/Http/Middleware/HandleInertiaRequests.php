@@ -51,8 +51,38 @@ class HandleInertiaRequests extends Middleware
             'teams' => fn () => $user?->toUserTeams(includeCurrent: true) ?? [],
             // Admin portal: signed-in administrator + notification bell data
             'admin' => fn () => ($p = $user?->adminProfile) ? ['full_name' => $p->full_name, 'email' => $p->email, 'role' => $p->role, 'role_label' => $p->roleLabel(), 'areas' => $p->areas()] : null,
+            // Rider sidebar / dashboard: the plan the rider currently has (paid first, then free trial). Null for non-riders.
+            'bikerSubscription' => fn () => $this->bikerSubscription($user),
             'adminNotifications' => fn () => $user?->adminProfile ? $this->adminNotifications($user->adminProfile) : null,
         ];
+    }
+
+    /** @return array{required: bool, kind: string|null, plan: string|null, starts_at: string|null, expires_at: string|null}|null */
+    private function bikerSubscription(?\App\Models\User $user): ?array
+    {
+        $rider = $user?->rider;
+        if (! $rider) {
+            return null;
+        }
+
+        try {
+            $now = now();
+            $current = fn (string $type) => \App\Models\RiderSubscription::where('rider_id', $rider->id)
+                ->where('subscription_type', $type)->effective($now)->orderByDesc('expires_at')->first();
+            $sub = $current('paid') ?? $current('trial');
+
+            return [
+                'required' => app(\App\Services\Subscriptions\SubscriptionService::class)->required(),
+                'kind' => $sub?->subscription_type,
+                'plan' => $sub ? ($sub->subscription_type === 'trial' ? 'Free Trial' : $sub->plan_name_snapshot) : null,
+                'starts_at' => $sub?->starts_at?->toIso8601String(),
+                'expires_at' => $sub?->expires_at?->toIso8601String(),
+            ];
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
     }
 
     /** @return array{unread: int, latest: mixed}|null  null when the notifications table is unavailable */

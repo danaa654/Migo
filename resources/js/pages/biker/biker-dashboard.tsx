@@ -22,6 +22,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { Notifications } from '@/components/biker-notifications';
+import { DashboardSubscriptionCard, useBikerSubscription } from '@/components/biker-plan';
 import BikerShell from '@/components/biker-shell';
 
 type Status = 'pending' | 'approved' | 'rejected' | null;
@@ -594,6 +595,7 @@ export default function BikerDashboard({
     accreditation,
     stats,
 }: Props) {
+    const subscription = useBikerSubscription();
     const suspended = accountStatus === 'suspended';
     const b = suspended ? suspendedBanner : banner[applicationStatus ?? 'none'];
     const BannerIcon = b.icon;
@@ -670,6 +672,13 @@ export default function BikerDashboard({
                         )}
                     </div>
                 </section>
+
+                {/* Subscription: which plan the rider has and when it ends (accredited riders only) */}
+                {canBook && subscription?.required && (
+                    <div className="order-2">
+                        <DashboardSubscriptionCard sub={subscription} />
+                    </div>
+                )}
 
                 {/* Application / suspension notice (hidden for accredited riders, who see the success state in the trail) */}
                 {(!canBook || reason || suspended) && (

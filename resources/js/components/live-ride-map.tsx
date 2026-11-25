@@ -33,6 +33,9 @@ export default function LiveRideMap({
             pickup ? [pickup.lat, pickup.lng] : [10.2092, 123.7589],
             15,
         );
+        // Wheel zoom turns on after a click on the map and off when the mouse leaves, so scrolling the page never gets stuck on it.
+        m.on('click', () => m.scrollWheelZoom.enable());
+        m.on('mouseout', () => m.scrollWheelZoom.disable());
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution:

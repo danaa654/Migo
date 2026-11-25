@@ -301,6 +301,13 @@ class RiderAccreditation
             $this->notify($r, 'accreditation_granted', 'You are accredited',
                 'Congratulations! You are now an accredited Migo rider and can accept bookings.');
 
+            // The free trial starts now: this is the moment the rider becomes eligible to receive bookings.
+            try {
+                app(\App\Services\Subscriptions\SubscriptionService::class)->startTrial($r);
+            } catch (\Throwable $e) {
+                report($e); // never block accreditation because of the trial
+            }
+
             return $r;
         });
     }
