@@ -4,6 +4,7 @@ namespace App\Http\Requests\Registration;
 
 use App\Enums\VehicleType;
 use App\Support\RiderEmailProof;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class RegisterBikerRequest extends RegistrationRequest
@@ -37,9 +38,9 @@ class RegisterBikerRequest extends RegistrationRequest
             ],
             'vehicle_type' => ['required', Rule::enum(VehicleType::class)],
             'address' => ['required', 'string', 'max:255'],
-            'license_number' => ['required', 'string', 'max:50', 'regex:/^[A-Z0-9\- ]+$/', Rule::unique('riders', 'license_number')],
+            'license_number' => ['required', 'string', 'max:50', 'regex:/^[A-Z0-9\- ]+$/', $this->uniqueIgnoringSpacesAndDashes('license_number', 'This license number is already registered.')],
             'license_expiry' => ['required', 'date', 'after:today'],
-            'motorcycle_plate_number' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9\- ]+$/', Rule::unique('riders', 'motorcycle_plate_number')],
+            'motorcycle_plate_number' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9\- ]+$/', $this->uniqueIgnoringSpacesAndDashes('motorcycle_plate_number', 'This plate number is already registered.')],
             // Mandatory selfie captured live with the device camera (the column stays nullable for riders registered before
             // this rule existed). Real file contents are checked: extension AND detected MIME type, never a Base64 string.
             'profile_picture' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
@@ -51,6 +52,28 @@ class RegisterBikerRequest extends RegistrationRequest
             'nbi_clearance' => $this->documentRules(),
             'document_consent' => ['accepted'],
         ];
+    }
+
+    /**
+     * "ABC 123", "ABC-123" and "ABC123" are the same plate. The value is still saved as typed (upper-case); only the
+     * comparison ignores spaces and dashes, so riders registered before this rule are matched too.
+     */
+    private function uniqueIgnoringSpacesAndDashes(string $column, string $message): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($column, $message): void {
+            $key = preg_replace('/[\s\-]+/', '', strtoupper((string) $value));
+            if ($key === '') {
+                return;
+            }
+
+            $taken = DB::table('riders')
+                ->whereRaw("replace(replace(upper({$column}), ' ', ''), '-', '') = ?", [$key])
+                ->exists();
+
+            if ($taken) {
+                $fail($message);
+            }
+        };
     }
 
     /** @return list<string> */

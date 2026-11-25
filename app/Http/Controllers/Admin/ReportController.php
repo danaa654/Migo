@@ -6,6 +6,11 @@ use App\Enums\ServiceType;
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
 use App\Services\Reports\BookingsReport;
+use App\Services\Reports\PassengersReport;
+use App\Services\Reports\RevenueReport;
+use App\Services\Reports\RidersReport;
+use App\Services\Reports\SubscriptionsReport;
+use App\Services\Reports\SupportReport;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -16,16 +21,23 @@ use Inertia\Response;
 /**
  * Admin > Reports and Analytics (the "reports" area: Administrator only). One page; the filter bar (date range +
  * service) is shared by every tab. Only the active tab's data is computed on each request.
+ * The service filter applies to ride data only: the Subscriptions and Support & Safety tabs ignore it.
  */
 class ReportController extends Controller
 {
-    /** Tabs that are built. Others (revenue, riders, passengers, support, subscriptions) are added one by one. */
-    private const TABS = ['bookings'];
+    private const TABS = ['bookings', 'revenue', 'riders', 'passengers', 'support', 'subscriptions'];
 
     private const MAX_DAYS = 366;
 
-    public function index(Request $request, BookingsReport $bookings): Response
-    {
+    public function index(
+        Request $request,
+        BookingsReport $bookings,
+        RevenueReport $revenue,
+        RidersReport $riders,
+        PassengersReport $passengers,
+        SupportReport $support,
+        SubscriptionsReport $subscriptions,
+    ): Response {
         $tab = in_array($request->query('tab'), self::TABS, true) ? $request->query('tab') : 'bookings';
         $service = in_array($request->query('service'), array_column(ServiceType::cases(), 'value'), true)
             ? $request->query('service') : null;
@@ -58,7 +70,14 @@ class ReportController extends Controller
                 'open_complaints' => $this->safe(fn () => DB::table('complaints')
                     ->whereIn('complaint_status', Complaint::OPEN)->count()),
             ],
-            'report' => $tab === 'bookings' ? $bookings->build($from, $to, $service) : null,
+            'report' => match ($tab) {
+                'bookings' => $bookings->build($from, $to, $service),
+                'revenue' => $revenue->build($from, $to, $service, $prevFrom, $prevTo),
+                'riders' => $riders->build($from, $to, $service, $prevFrom, $prevTo),
+                'passengers' => $passengers->build($from, $to, $service, $prevFrom, $prevTo),
+                'support' => $support->build($from, $to),
+                'subscriptions' => $subscriptions->build($from, $to, $prevFrom, $prevTo),
+            },
         ]);
     }
 
