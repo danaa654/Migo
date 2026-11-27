@@ -41,6 +41,11 @@ return new class extends Migration
             $table->timestamp('accepted_at')->nullable();
             $table->timestamps();
         });
+
+        // users and teams point at each other, so users.current_team_id (created with users) gets its key here.
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('current_team_id')->references('id')->on('teams')->nullOnDelete();
+        });
     }
 
     /**
@@ -48,6 +53,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['current_team_id']);
+        });
+
         Schema::dropIfExists('team_invitations');
         Schema::dropIfExists('team_members');
         Schema::dropIfExists('teams');

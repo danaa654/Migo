@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
  * Subscription Management. The free trial is NOT a plan and NOT a payment: it is a rider_subscriptions row of
  * type "trial". Paid purchases keep a snapshot of the plan (name / duration / price) so editing a plan later never
  * changes history. Trial daily usage is derived from the existing bookings table (no second counter).
+ * Includes the plan card colour and the payment-gateway (PayMongo) columns.
  */
 return new class extends Migration
 {
@@ -18,6 +19,7 @@ return new class extends Migration
             $t->id();
             $t->string('name', 80);
             $t->text('description')->nullable();
+            $t->string('color', 7)->nullable(); // card colour chosen by the admin (#RRGGBB). Null = the app picks one by plan name.
             $t->unsignedSmallInteger('duration_value');
             $t->string('duration_unit', 10)->default('month'); // day | month | year
             $t->decimal('price', 10, 2);
@@ -56,6 +58,11 @@ return new class extends Migration
             $t->string('duration_unit', 10);
             $t->decimal('amount', 10, 2);
             $t->string('payment_method', 30);
+            // Payment gateway (PayMongo webhook confirms the payment).
+            $t->string('provider', 20)->nullable();
+            $t->string('provider_session_id', 100)->nullable()->unique();
+            $t->string('provider_payment_id', 100)->nullable();
+            $t->text('checkout_url')->nullable();
             $t->string('transaction_reference', 100)->nullable();
             $t->string('payment_proof')->nullable(); // private disk path, only served to authorised admins
             $t->string('status', 15)->default('pending'); // pending | verified | rejected | refunded
@@ -79,13 +86,14 @@ return new class extends Migration
 
         $now = now();
         foreach ([
-            ['Basic', '3 months of unlimited booking access.', 3, 'month', 599, 1],
-            ['Standard', '6 months of unlimited booking access.', 6, 'month', 1099, 2],
-            ['Premium', '1 year of unlimited booking access.', 12, 'month', 1999, 3],
-        ] as [$name, $desc, $value, $unit, $price, $sort]) {
+            ['Basic', '3 months of unlimited booking access.', '#F5C542', 3, 'month', 599, 1],
+            ['Standard', '6 months of unlimited booking access.', '#2C4F73', 6, 'month', 1099, 2],
+            ['Premium', '1 year of unlimited booking access.', '#171717', 12, 'month', 1999, 3],
+        ] as [$name, $desc, $color, $value, $unit, $price, $sort]) {
             DB::table('subscription_plans')->insert([
-                'name' => $name, 'description' => $desc, 'duration_value' => $value, 'duration_unit' => $unit,
-                'price' => $price, 'is_active' => true, 'sort_order' => $sort, 'created_at' => $now, 'updated_at' => $now,
+                'name' => $name, 'description' => $desc, 'color' => $color, 'duration_value' => $value,
+                'duration_unit' => $unit, 'price' => $price, 'is_active' => true, 'sort_order' => $sort,
+                'created_at' => $now, 'updated_at' => $now,
             ]);
         }
     }

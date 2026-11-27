@@ -2,9 +2,9 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/** Trip tables. The trip / fare defaults live in dispatch_settings (seeded in create_dispatch_tables). */
 return new class extends Migration
 {
     public function up(): void
@@ -33,13 +33,6 @@ return new class extends Migration
             $t->timestamp('recorded_at')->useCurrent();
             $t->index(['booking_id', 'id']);
         });
-
-        $now = now();
-        foreach (['arrival_radius_meters' => '300', 'fare_base_php' => '20', 'fare_base_km' => '1', 'fare_per_km_php' => '10', 'fare_minimum_php' => '20'] as $k => $v) {
-            if (! DB::table('dispatch_settings')->where('key', $k)->exists()) {
-                DB::table('dispatch_settings')->insert(['key' => $k, 'value' => $v, 'updated_at' => $now]);
-            }
-        }
     }
 
     public function down(): void

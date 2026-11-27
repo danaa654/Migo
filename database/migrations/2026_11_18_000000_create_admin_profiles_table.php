@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('role')->default('admin');   // super_admin | admin
             $table->string('status')->default('active'); // active | inactive | suspended
+            $table->string('avatar_path')->nullable();   // optional photo shown in the admin sidebar / profile
             $table->timestamps();
         });
     }
