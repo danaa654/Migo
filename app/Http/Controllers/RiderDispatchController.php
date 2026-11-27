@@ -89,6 +89,7 @@ class RiderDispatchController extends Controller
                 'estimated_fare' => $active->estimated_fare, 'estimated_distance' => $active->estimated_distance,
                 // Contact details are revealed only after this rider has been assigned.
                 'passenger_name' => $active->passenger?->full_name, 'passenger_phone' => $active->passenger?->phone,
+                'passenger_photo_url' => $active->passenger?->avatar_path ? '/storage/'.ltrim($active->passenger->avatar_path, '/') : null,
             ] : null,
         ]);
     }

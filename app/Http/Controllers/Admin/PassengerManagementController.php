@@ -65,6 +65,7 @@ class PassengerManagementController extends Controller
                 'full_name' => $p->full_name !== '' ? $p->full_name : null,
                 'email' => $p->email,
                 'phone' => $p->phone !== '' ? $p->phone : null,
+                'avatar_url' => $this->avatarUrl($p->avatar_path),
                 'sign_in_methods' => $p->user?->signInMethods() ?? [],
                 'account_status' => $p->account_status,
                 'bookings_count' => (int) $p->bookings_count,
@@ -112,6 +113,16 @@ class PassengerManagementController extends Controller
                 'created_at' => $b->created_at?->toIso8601String(),
             ])->values();
 
+        // Profile summary numbers: money spent on completed trips, latest booking, average rating given.
+        $totalSpent = (float) Booking::query()
+            ->where('passenger_id', $passenger->id)
+            ->where('booking_status', BookingStatus::Completed->value)
+            ->sum(DB::raw('coalesce(final_fare, estimated_fare)'));
+        $lastBookingAt = Booking::query()->where('passenger_id', $passenger->id)->max('created_at');
+        $avgRatingGiven = $passenger->user_id
+            ? DB::table('booking_ratings')->where('rater_type', 'passenger')->where('rater_user_id', $passenger->user_id)->avg('rating')
+            : null;
+
         // Ratings this passenger gave to riders.
         $ratings = $passenger->user_id
             ? DB::table('booking_ratings as r')
@@ -140,7 +151,11 @@ class PassengerManagementController extends Controller
                 'full_name' => $passenger->full_name !== '' ? $passenger->full_name : null,
                 'email' => $passenger->email,
                 'phone' => $passenger->phone !== '' ? $passenger->phone : null,
+                'avatar_url' => $this->avatarUrl($passenger->avatar_path),
                 'sign_in_methods' => $passenger->user?->signInMethods() ?? [],
+                'total_spent' => round($totalSpent, 2),
+                'last_booking_at' => $lastBookingAt ? Carbon::parse($lastBookingAt)->toIso8601String() : null,
+                'avg_rating_given' => $avgRatingGiven !== null ? round((float) $avgRatingGiven, 1) : null,
                 'account_status' => $passenger->account_status,
                 'suspension_reason' => $passenger->suspension_reason,
                 'has_account' => $passenger->user_id !== null,
@@ -185,6 +200,12 @@ class PassengerManagementController extends Controller
         }
 
         return back();
+    }
+
+    /** Public URL of the photo the customer uploaded on their own Profile page (null when they have none). */
+    private function avatarUrl(?string $path): ?string
+    {
+        return $path ? '/storage/'.ltrim($path, '/') : null;
     }
 
     private function label(Passenger $passenger): string

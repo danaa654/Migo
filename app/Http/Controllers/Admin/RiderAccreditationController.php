@@ -18,6 +18,7 @@ use App\Models\RiderOrientation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 
 /**
@@ -41,6 +42,16 @@ class RiderAccreditationController extends Controller
     {
         return $this->run($request, $rider, $service, 'Document verification recorded.',
             fn ($staff) => $service->recordDocumentVerification($rider, $staff, $request->validated()));
+    }
+
+    /** Seats used / left on one day, for the hint on the schedule form. */
+    public function orientationCapacity(Request $request, Rider $rider, RiderAccreditation $service): JsonResponse
+    {
+        abort_unless($request->user()?->isActiveAdmin(), 403);
+
+        $data = $request->validate(['date' => ['required', 'date_format:Y-m-d']]);
+
+        return response()->json($service->orientationCapacity(Carbon::createFromFormat('Y-m-d', $data['date']), (string) $rider->id));
     }
 
     public function scheduleOrientation(ScheduleOrientationRequest $request, Rider $rider, RiderAccreditation $service): JsonResponse|RedirectResponse

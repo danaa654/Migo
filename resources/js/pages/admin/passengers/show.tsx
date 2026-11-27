@@ -9,7 +9,8 @@ import {
     methodsText,
     type PassengerAction,
 } from '@/components/admin/passenger-shared';
-import { Avatar, shortId } from '@/components/admin/rider-shared';
+import { PassengerPhoto } from '@/components/admin/passenger-profile';
+import { shortId } from '@/components/admin/rider-shared';
 import AdminLayout, { formatDate } from '@/layouts/admin-layout';
 
 type Passenger = {
@@ -17,7 +18,11 @@ type Passenger = {
     full_name: string | null;
     email: string | null;
     phone: string | null;
+    avatar_url: string | null;
     sign_in_methods: string[];
+    total_spent: number;
+    last_booking_at: string | null;
+    avg_rating_given: number | null;
     account_status: string;
     suspension_reason: string | null;
     has_account: boolean;
@@ -108,7 +113,11 @@ export default function PassengerShow({ passenger, tripStats, bookings, ratings,
 
             <div className="mb-6 flex flex-col gap-4 rounded-lg border border-m-line bg-m-card p-4 shadow-sm sm:p-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-center gap-4">
-                    <Avatar name={passenger.full_name ?? ''} url={null} size="size-16" />
+                    <PassengerPhoto
+                        name={passenger.full_name ?? ''}
+                        url={passenger.avatar_url}
+                        size="size-20"
+                    />
                     <div className="min-w-0">
                         <h2 className="truncate text-xl font-bold">{displayName(passenger)}</h2>
                         <p className="text-sm break-all text-m-muted">{passenger.email ?? passenger.phone ?? '—'}</p>
@@ -230,7 +239,11 @@ export default function PassengerShow({ passenger, tripStats, bookings, ratings,
                             <Info label="Email">{passenger.email ?? '—'}</Info>
                             <Info label="Phone">{passenger.phone ?? '—'}</Info>
                             <Info label="Sign-in methods">{methodsText(passenger.sign_in_methods)}</Info>
+                            <Info label="Profile photo">{passenger.avatar_url ? 'Uploaded by the customer' : 'No photo uploaded'}</Info>
                             <Info label="Registered">{formatDate(passenger.created_at, true)}</Info>
+                            <Info label="Last booking">{passenger.last_booking_at ? formatDate(passenger.last_booking_at, true) : '—'}</Info>
+                            <Info label="Total spent (completed trips)">{peso(passenger.total_spent)}</Info>
+                            <Info label="Average rating given">{passenger.avg_rating_given != null ? `${passenger.avg_rating_given}/5` : 'No ratings yet'}</Info>
                             {!passenger.has_account && <Info label="Login account">No linked login account</Info>}
                         </dl>
                     </Card>

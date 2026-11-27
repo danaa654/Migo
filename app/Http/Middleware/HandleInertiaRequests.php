@@ -50,10 +50,14 @@ class HandleInertiaRequests extends Middleware
             'currentTeam' => fn () => $user?->currentTeam ? $user->toUserTeam($user->currentTeam) : null,
             'teams' => fn () => $user?->toUserTeams(includeCurrent: true) ?? [],
             // Admin portal: signed-in administrator + notification bell data
-            'admin' => fn () => ($p = $user?->adminProfile) ? ['full_name' => $p->full_name, 'email' => $p->email, 'role' => $p->role, 'role_label' => $p->roleLabel(), 'areas' => $p->areas()] : null,
+            'admin' => fn () => ($p = $user?->adminProfile) ? ['full_name' => $p->full_name, 'email' => $p->email, 'role' => $p->role, 'role_label' => $p->roleLabel(), 'areas' => $p->areas(), 'avatar_url' => $p->avatarUrl()] : null,
             // Rider sidebar / dashboard: the plan the rider currently has (paid first, then free trial). Null for non-riders.
             'bikerSubscription' => fn () => $this->bikerSubscription($user),
             // Rider sidebar: URL of the photo the rider shows (avatar, else registration selfie). Null for non-riders / no photo.
+            // Customer sidebar: the photo the customer chose. Null for non-customers / no photo.
+            'customerAvatar' => fn () => ($p = $user?->passenger?->avatar_path) ? '/storage/'.ltrim($p, '/') : null,
+            // Rider sidebar header: which vehicle the rider drives ("two_wheel" or "four_wheel"). Null for non-riders.
+            'bikerVehicle' => fn () => $user?->rider?->vehicle_type?->value,
             'bikerAvatar' => fn () => ($p = $user?->rider?->displayPhotoPath()) ? '/storage/'.ltrim($p, '/') : null,
             'adminNotifications' => fn () => $user?->adminProfile ? $this->adminNotifications($user->adminProfile) : null,
         ];

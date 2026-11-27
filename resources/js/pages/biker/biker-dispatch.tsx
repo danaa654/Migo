@@ -57,6 +57,7 @@ type Active = {
     estimated_fare: number | null;
     estimated_distance: number | null;
     passenger_name: string | null;
+    passenger_photo_url?: string | null;
     passenger_phone: string | null;
 };
 type State = {
@@ -577,7 +578,16 @@ export default function BikerDispatch({ account, notifications }: Props) {
                                 <dt className="text-xs text-[var(--b-muted)]">
                                     {a.service_type === 'MIGODALA' ? 'Sender' : 'Passenger'}
                                 </dt>
-                                <dd>{a.passenger_name ?? '—'}</dd>
+                                <dd className="flex items-center gap-2">
+                                    {a.passenger_photo_url && (
+                                        <img
+                                            src={a.passenger_photo_url}
+                                            alt=""
+                                            className="size-8 rounded-full object-cover ring-1 ring-[var(--b-line)]"
+                                        />
+                                    )}
+                                    {a.passenger_name ?? '—'}
+                                </dd>
                             </div>
                             {a.service_type === 'MIGODALA' && (
                                 <>

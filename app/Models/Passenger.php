@@ -12,7 +12,7 @@ class Passenger extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['user_id', 'full_name', 'email', 'phone', 'account_status', 'suspension_reason'];
+    protected $fillable = ['user_id', 'full_name', 'email', 'phone', 'account_status', 'suspension_reason', 'avatar_path'];
 
     public function user(): BelongsTo
     {

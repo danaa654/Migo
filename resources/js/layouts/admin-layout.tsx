@@ -1,5 +1,6 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { adminRoleTheme } from '@/lib/admin-role-theme';
 import {
     Bell,
     Bike,
@@ -13,6 +14,7 @@ import {
     MessageSquareWarning,
     Settings,
     UserCog,
+    UserRound,
     Users,
     X,
     type LucideIcon,
@@ -26,6 +28,7 @@ type Shared = {
         role: string;
         role_label?: string;
         areas?: string[];
+        avatar_url?: string | null;
     } | null;
     dashboardUrl?: string | null;
     adminNotifications: {
@@ -43,6 +46,7 @@ type Shared = {
 /** Each item belongs to an area; the server decides which areas a staff role has (AdminProfile::AREAS). */
 const nav: { label: string; href: string; icon: LucideIcon; area: string }[] = [
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, area: 'dashboard' },
+    { label: 'Dashboard', href: '/admin/support/dashboard', icon: LayoutDashboard, area: 'support_dashboard' },
     { label: 'Rider Management', href: '/admin/riders', icon: Bike, area: 'riders' },
     { label: 'Subscription Management', href: '/admin/subscriptions', icon: CreditCard, area: 'subscriptions' },
     { label: 'Passenger Management', href: '/admin/passengers', icon: Users, area: 'passengers' },
@@ -52,6 +56,8 @@ const nav: { label: string; href: string; icon: LucideIcon; area: string }[] = [
     { label: 'Notifications', href: '/admin/notifications', icon: Bell, area: 'notifications' },
     { label: 'Staff Accounts', href: '/admin/staff', icon: UserCog, area: 'staff' },
     { label: 'Admin Settings', href: '/admin/settings', icon: Settings, area: 'settings' },
+    // Every staff role has its own profile (change password, profile photo): shown to everyone.
+    { label: 'Profile', href: '/admin/profile', icon: UserRound, area: '*' },
 ];
 
 export const formatDate = (s?: string | null, time = false) => {
@@ -101,7 +107,10 @@ export default function AdminLayout({
     const { url, props } = usePage();
     const { admin, adminNotifications, dashboardUrl } =
         props as unknown as Shared;
-    const visibleNav = nav.filter(({ area }) => admin?.areas?.includes(area));
+    const roleTheme = adminRoleTheme(admin?.role);
+    const visibleNav = nav.filter(
+        ({ area }) => area === '*' || admin?.areas?.includes(area),
+    );
     const [collapsed, setCollapsed] = useState(false);
     const [drawer, setDrawer] = useState(false);
     const bell = useDropdown();
@@ -176,7 +185,7 @@ export default function AdminLayout({
 
                     <div className="relative z-10 p-0">
                         <div
-                            className={`flex items-center justify-between gap-2 rounded-br-[1.5rem] bg-linear-to-br from-[#1B5240] via-[#17483A] to-[#0F2F25] px-3 py-3 shadow-md ${collapsed ? 'lg:justify-center lg:rounded-br-2xl lg:px-2' : ''}`}
+                            className={`flex items-center justify-between gap-2 rounded-br-[1.5rem] bg-linear-to-br ${roleTheme.sidebarHeader} px-3 py-3 shadow-md ${collapsed ? 'lg:justify-center lg:rounded-br-2xl lg:px-2' : ''}`}
                         >
                             <Link
                                 href={dashboardUrl ?? '/admin/dashboard'}
@@ -195,9 +204,7 @@ export default function AdminLayout({
                                         MIGO
                                     </span>
                                     <span className="block text-[8px] leading-snug font-medium tracking-wide text-white/80 uppercase">
-                                        Admin Management
-                                        <br />
-                                        System
+                                        {roleTheme.label}
                                     </span>
                                 </span>
                             </Link>
@@ -257,12 +264,24 @@ export default function AdminLayout({
                     </nav>
 
                     <div className="relative z-10 p-3 dark:bg-gradient-to-t dark:from-[#08100D]/70 dark:to-transparent">
-                        <div
-                            className={`flex items-center gap-3 ${collapsed ? 'lg:justify-center' : ''}`}
+                        <Link
+                            href="/admin/profile"
+                            title="My Profile"
+                            aria-current={path === '/admin/profile' ? 'page' : undefined}
+                            onClick={() => setDrawer(false)}
+                            className={`-m-1 flex items-center gap-3 rounded-lg p-1 transition-colors hover:bg-m-mint/60 ${ring} ${path === '/admin/profile' ? 'bg-m-mint/90' : ''} ${collapsed ? 'lg:justify-center' : ''}`}
                         >
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-m-solid text-xs font-semibold text-white">
-                                {initials}
-                            </span>
+                            {admin?.avatar_url ? (
+                                <img
+                                    src={admin.avatar_url}
+                                    alt=""
+                                    className="size-9 shrink-0 rounded-full object-cover ring-2 ring-m-line"
+                                />
+                            ) : (
+                                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-m-solid text-xs font-semibold text-white">
+                                    {initials}
+                                </span>
+                            )}
                             <div
                                 className={`min-w-0 ${collapsed ? 'lg:hidden' : ''}`}
                             >
@@ -273,7 +292,7 @@ export default function AdminLayout({
                                     {admin?.email}
                                 </p>
                             </div>
-                        </div>
+                        </Link>
                         <button
                             type="button"
                             onClick={logout}
@@ -330,6 +349,23 @@ export default function AdminLayout({
                             />
 
                             <ThemeToggle className="size-8!" />
+
+                            <Link
+                                href="/admin/profile"
+                                title="My Profile"
+                                aria-label="My Profile"
+                                className={`flex size-8 items-center justify-center overflow-hidden rounded-full border border-m-line bg-m-solid text-[11px] font-semibold text-white transition hover:opacity-90 ${ring}`}
+                            >
+                                {admin?.avatar_url ? (
+                                    <img
+                                        src={admin.avatar_url}
+                                        alt=""
+                                        className="size-full object-cover"
+                                    />
+                                ) : (
+                                    initials
+                                )}
+                            </Link>
 
                             <div ref={bell.ref} className="relative">
                                 <button

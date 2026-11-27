@@ -25,6 +25,10 @@ import {
     type PassengerAction,
     type PassengerRef,
 } from '@/components/admin/passenger-shared';
+import {
+    PassengerProfileDialog,
+    type PassengerProfile,
+} from '@/components/admin/passenger-profile';
 import { Avatar } from '@/components/admin/rider-shared';
 import {
     DropdownMenu,
@@ -40,6 +44,7 @@ type Row = {
     full_name: string | null;
     email: string | null;
     phone: string | null;
+    avatar_url: string | null;
     sign_in_methods: string[];
     account_status: string;
     bookings_count: number;
@@ -125,6 +130,7 @@ function SummaryChip({
 export default function PassengerIndex({ stats, passengers, filters, canManage }: Props) {
     const [search, setSearch] = useState(filters.search);
     const [dialog, setDialog] = useState<{ passenger: PassengerRef; action: PassengerAction } | null>(null);
+    const [profile, setProfile] = useState<PassengerProfile | null>(null);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const hasFilter = !!(filters.search || filters.status);
 
@@ -193,6 +199,19 @@ export default function PassengerIndex({ stats, passengers, filters, canManage }
         const set = new Set([1, l, c - 1, c, c + 1].filter((p) => p >= 1 && p <= l));
         return [...set].sort((a, b) => a - b);
     })();
+
+    /** The customer's own profile photo; clicking it opens the quick profile. */
+    const avatarBtn = (r: Row, size?: string) => (
+        <button
+            type="button"
+            onClick={() => setProfile(r)}
+            aria-label={`Quick view profile of ${displayName(r)}`}
+            title="Quick view profile"
+            className={`shrink-0 rounded-full transition hover:ring-2 hover:ring-m-accent/40 ${ring}`}
+        >
+            <Avatar name={r.full_name ?? ''} url={r.avatar_url} size={size} />
+        </button>
+    );
 
     const viewBtn = (r: Row, full = false) => (
         <Link
@@ -299,6 +318,24 @@ export default function PassengerIndex({ stats, passengers, filters, canManage }
                     </select>
                 </div>
 
+                {hasFilter && passengers.data.length > 0 && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-m-line bg-m-mint/40 px-4 py-2 text-xs text-m-body">
+                        <p>
+                            {passengers.total.toLocaleString()} result
+                            {passengers.total === 1 ? '' : 's'}
+                            {filters.search ? ` for “${filters.search}”` : ''}
+                            {filters.status ? ` · ${filters.status}` : ''}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={clear}
+                            className={`rounded font-semibold text-m-accent hover:underline ${ring}`}
+                        >
+                            Clear filters
+                        </button>
+                    </div>
+                )}
+
                 {passengers.data.length === 0 ? (
                     <div className="px-4 py-14 text-center">
                         <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-m-mint text-m-accent">
@@ -346,7 +383,7 @@ export default function PassengerIndex({ stats, passengers, filters, canManage }
                                             </td>
                                             <td className={td}>
                                                 <div className="flex items-center gap-3">
-                                                    <Avatar name={r.full_name ?? ''} url={null} />
+                                                    {avatarBtn(r)}
                                                     <div className="min-w-0">
                                                         <Link
                                                             href={`${BASE}/${r.id}`}
@@ -389,7 +426,7 @@ export default function PassengerIndex({ stats, passengers, filters, canManage }
                             {passengers.data.map((r) => (
                                 <li key={r.id} className="space-y-3 p-4">
                                     <div className="flex items-center gap-3">
-                                        <Avatar name={r.full_name ?? ''} url={null} size="size-11" />
+                                        {avatarBtn(r, 'size-11')}
                                         <div className="min-w-0 flex-1">
                                             <p className={`truncate font-semibold ${r.full_name ? '' : 'text-m-muted italic'}`}>{displayName(r)}</p>
                                             <p className="font-mono text-xs text-m-muted" title={r.id}>{idTail(r.id)}</p>
@@ -457,6 +494,11 @@ export default function PassengerIndex({ stats, passengers, filters, canManage }
                     </>
                 )}
             </section>
+
+            <PassengerProfileDialog
+                passenger={profile}
+                onClose={() => setProfile(null)}
+            />
 
             <PassengerActionDialog
                 passenger={dialog?.passenger ?? null}

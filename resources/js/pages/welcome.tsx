@@ -1434,15 +1434,10 @@ export default function Welcome() {
                                 Terms and Conditions
                             </Link>
                         </nav>
-                        <p className="mt-6 max-w-3xl leading-relaxed">
-                            Disclaimer: Ang Migo ay isang proposed academic
-                            project na ginawa para sa pag-aaral at
-                            demonstration.
-                        </p>
+                    
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
                             <p className="text-white/60">
-                                © {new Date().getFullYear()} Migo (proposed
-                                academic project). All rights reserved.
+                                © {new Date().getFullYear()} Migo . All rights reserved.
                             </p>
                             <Link
                                 href="/admin/login"

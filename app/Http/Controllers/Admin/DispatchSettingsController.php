@@ -26,6 +26,8 @@ class DispatchSettingsController extends Controller
         'location_freshness_seconds' => 60, 'auto_offline_seconds' => 300, 'arrival_radius_meters' => 300, 'approaching_radius_meters' => 500,
         // Rider free trial (SubscriptionService reads these; the defaults match its constants).
         'trial_hours' => 72, 'trial_daily_limit' => 3,
+        // Rider orientation: most riders scheduled on one day (RiderAccreditation reads it; default 30).
+        'orientation_daily_limit' => 30,
     ];
 
     /** Radius (km) of the anonymous "riders near you" map on the customer booking page (NearbyRidersService reads it). */
@@ -93,6 +95,7 @@ class DispatchSettingsController extends Controller
             'approaching_radius_meters' => ['required', 'integer', 'between:50,2000', 'gt:arrival_radius_meters'],
             'trial_hours' => ['required', 'integer', 'between:1,720'],
             'trial_daily_limit' => ['required', 'integer', 'between:1,50'],
+            'orientation_daily_limit' => ['required', 'integer', 'between:1,200'],
             ...$this->fareRules(),
             'migomoto_max_passengers' => ['required', 'integer', 'between:1,2'],
             'migocars_max_passengers' => ['required', 'integer', 'between:1,8'],

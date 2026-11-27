@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Customer\SetCustomerPasswordRequest;
 use App\Http\Requests\Customer\UpdateCustomerPasswordRequest;
+use App\Http\Requests\Customer\UpdateCustomerPhotoRequest;
 use App\Http\Requests\Customer\UpdateCustomerProfileRequest;
 use App\Models\Passenger;
 use App\Support\PhilippinePhone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,6 +30,7 @@ class CustomerProfileController extends Controller
             'profile' => [
                 'full_name' => $passenger?->full_name ?: $user->name,
                 'email' => $user->email,
+                'avatar_url' => $passenger?->avatar_path && Storage::disk('public')->exists($passenger->avatar_path) ? '/storage/'.ltrim($passenger->avatar_path, '/') : null,
                 // Verified number (source of truth: users.phone, E.164). "legacy" is a number typed at the old
                 // registration that has not been confirmed by SMS yet, offered as a starting point.
                 'phone' => [
@@ -61,6 +64,36 @@ class CustomerProfileController extends Controller
 
         // After the first-login "Complete your profile" step, continue to the dashboard.
         return redirect($firstTime ? '/customer/dashboard' : '/customer/profile')->with('status', 'Na-save ang profile mo.');
+    }
+
+    public function updatePhoto(UpdateCustomerPhotoRequest $request): RedirectResponse
+    {
+        $passenger = $request->user()->passenger;
+        if (! $passenger) {
+            return back()->withErrors(['avatar' => 'Save your full name first, then add a photo.']);
+        }
+
+        $old = $passenger->avatar_path;
+        $path = $request->file('avatar')->store('customer-avatars', 'public');
+        $passenger->forceFill(['avatar_path' => $path])->save();
+
+        if ($old && $old !== $path) {
+            Storage::disk('public')->delete($old);
+        }
+
+        return back()->with('status', 'Profile photo updated.');
+    }
+
+    public function removePhoto(Request $request): RedirectResponse
+    {
+        $passenger = $request->user()->passenger;
+
+        if ($passenger?->avatar_path) {
+            Storage::disk('public')->delete($passenger->avatar_path);
+            $passenger->forceFill(['avatar_path' => null])->save();
+        }
+
+        return back()->with('status', 'Profile photo removed.');
     }
 
     public function updatePassword(UpdateCustomerPasswordRequest $request): RedirectResponse

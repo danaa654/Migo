@@ -12,24 +12,24 @@ const pages: Record<
         title: 'Privacy Policy',
         sections: [
             {
-                heading: 'About this website',
-                body: 'This is a proposed academic project. It is built for study and demonstration and is not a commercial service.',
+                heading: 'About this policy',
+                body: 'Migo is a ride and delivery platform that connects customers with registered riders and drivers. This policy explains what information we collect and how we use it.',
             },
             {
-                heading: 'What this website collects',
-                body: "Visitors can browse the public pages without an account. Customers do not fill in a registration form: they sign in with Google or with their mobile number. For Google sign-in we collect the name and email address of the Google account (we never receive your Google password). For phone sign-in we collect your mobile number, which you confirm with a one-time code sent by SMS, and the full name you enter on your profile. Bikers who register provide their name, email address, contact number and password. Bikers also provide their home address, driver's license number and expiry date, motorcycle plate number and, optionally, a profile photo so an administrator can review the application. Passwords are stored only as a hash. One-time codes are stored only as a hash and expire after 5 minutes. A session cookie keeps a signed-in user signed in.",
+                heading: 'What we collect',
+                body: "Visitors can browse the public pages without an account. Customers do not fill in a registration form: they sign in with their Google account. When you sign in with Google we collect the name and email address of your Google account (we never receive your Google password), and a profile photo if you choose to upload one. Riders and drivers who register provide their name, email address, contact number and password. They also provide their home address, driver's license number and expiry date, plate number and, optionally, a profile photo. Supporting documents, such as a driver's license, vehicle registration, official receipt and NBI clearance, are uploaded so an administrator can review the application. Passwords are stored only as a hash. A session cookie keeps a signed-in user signed in.",
             },
             {
-                heading: 'Sign-in services',
-                body: "Google sign-in is provided by Google and is subject to Google's own privacy policy. One-time codes are delivered by text message through an SMS provider, which receives your mobile number and the message so it can deliver it. Your name, email address and mobile number are used to identify your account and to run the ride features of this project.",
+                heading: 'Sign-in and payment services',
+                body: "Google sign-in is provided by Google and is subject to Google's own privacy policy. Rider subscription payments are completed on the payment provider's secure checkout page. We receive the payment status but do not store your card details.",
             },
             {
-                heading: 'What this website does not collect',
-                body: 'This website does not process payments, and it does not ask for government ID images. Ride bookings made here are for academic demonstration only.',
+                heading: 'How we use your information',
+                body: 'Your name, email address and contact details are used to identify your account, run the ride and delivery features, review rider applications and respond to support requests. Documents uploaded by riders are visible only to the administrators who review them and to the rider who submitted them.',
             },
             {
-                heading: 'Status',
-                body: 'This page is a placeholder for the academic project. It should be reviewed and completed by the project team before any real use.',
+                heading: 'Changes to this policy',
+                body: 'We may update this policy from time to time. Continuing to use the website after an update means you accept the revised policy.',
             },
         ],
     },
@@ -37,24 +37,28 @@ const pages: Record<
         title: 'Terms and Conditions',
         sections: [
             {
-                heading: 'Academic project',
-                body: 'This website is a proposed academic project built for study and demonstration.',
+                heading: 'About Migo',
+                body: 'Migo is a ride and delivery platform that connects customers with registered riders and drivers. By using this website you agree to these terms.',
             },
             {
-                heading: 'No real services',
-                body: 'Accounts and ride bookings exist only for this academic demonstration and do not represent a real transport service.',
+                heading: 'Customer accounts',
+                body: 'Customers do not fill in a registration form. You sign in with your Google account, and a customer account is created automatically the first time you sign in successfully. By signing in, you agree to the collection of your Google name and email address as described in the Privacy Policy.',
             },
             {
-                heading: 'Accounts',
-                body: 'Customers do not register: they sign in with Google or with their mobile number and a one-time SMS code, and a customer account is created automatically on the first successful sign-in. By signing in, customers agree to the collection of their Google name and email address or their mobile number as described in the Privacy Policy. Bikers and drivers apply for an account through the rider registration form. Biker accounts must be approved by an administrator and complete the accreditation process (document verification, orientation, motorcycle inspection) before they can accept service requests. Administrator accounts are created by an authorized person; there is no public administrator registration.',
+                heading: 'Rider and driver accounts',
+                body: 'Bikers and drivers apply for an account through the rider registration form. Each application must be approved by an administrator. Approved riders must then complete the accreditation process, which covers document verification, orientation and a vehicle inspection, before they can accept service requests.',
+            },
+            {
+                heading: 'Administrator accounts',
+                body: 'Administrator accounts are created only by an authorized person. There is no public administrator registration.',
             },
             {
                 heading: 'Trademarks',
-                body: 'Migo and its logo are used for this academic project only.',
+                body: 'The Migo name and logo may not be used without permission.',
             },
             {
-                heading: 'Status',
-                body: 'This page is a placeholder for the academic project. It should be reviewed and completed by the project team before any real use.',
+                heading: 'Changes to these terms',
+                body: 'We may update these terms from time to time. Continuing to use the website after an update means you accept the revised terms.',
             },
         ],
     },
@@ -118,7 +122,7 @@ export default function Legal({
                     </p>
                 </main>
                 <footer className="px-5 pb-6 text-center text-xs text-m-muted">
-                    Proposed academic project.
+                    &copy; Migo. All rights reserved.
                 </footer>
             </div>
         </>

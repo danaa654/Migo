@@ -4,9 +4,11 @@ use App\Http\Controllers\Admin\ComplaintManagementController;
 use App\Http\Controllers\Admin\DispatchMonitorController;
 use App\Http\Controllers\Admin\DispatchSettingsController;
 use App\Http\Controllers\Admin\PassengerManagementController;
+use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\RiderAccreditationController;
 use App\Http\Controllers\Admin\RiderManagementController;
 use App\Http\Controllers\Admin\StaffAccountController;
+use App\Http\Controllers\Admin\SupportDashboardController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\BikerAccreditationController;
 use App\Http\Controllers\BikerComplaintController;
@@ -125,6 +127,8 @@ Route::middleware(['auth', 'role:customer'])->prefix('customer')->group(function
     Route::get('profile', [CustomerProfileController::class, 'edit'])->name('customer.profile');
     Route::patch('profile', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
     Route::put('profile/password', [CustomerProfileController::class, 'updatePassword'])->name('customer.profile.password');
+    Route::post('profile/photo', [CustomerProfileController::class, 'updatePhoto'])->middleware('throttle:10,1')->name('customer.profile.photo');
+    Route::delete('profile/photo', [CustomerProfileController::class, 'removePhoto'])->middleware('throttle:10,1')->name('customer.profile.photo.remove');
 
     // Add or confirm the phone number with an SMS code (same OTP engine as the login).
     Route::post('profile/phone/send', [CustomerPhoneController::class, 'send'])->middleware('throttle:20,1')->name('customer.profile.phone.send');
@@ -180,6 +184,14 @@ Route::middleware(['auth', 'role:biker'])->prefix('biker')->group(function () {
 // Admin portal (Laravel session auth + MySQL). Every /admin page requires an active administrator.
 Route::middleware(['auth', EnsureActiveAdmin::class])->prefix('admin')->group(function () {
     Route::get('dashboard', AdminDashboardController::class)->middleware('admin.area:dashboard')->name('admin.dashboard');
+    Route::get('support/dashboard', SupportDashboardController::class)->middleware('admin.area:support_dashboard')->name('admin.support.dashboard');
+
+    // My Profile: every active staff account (Administrator, Operations Admin, Support Staff) can change their own
+    // password and profile photo. No area middleware: it is always the signed-in staff member's own account.
+    Route::get('profile', [AdminProfileController::class, 'edit'])->name('admin.profile');
+    Route::put('profile/password', [AdminProfileController::class, 'updatePassword'])->middleware('throttle:6,1')->name('admin.profile.password');
+    Route::post('profile/photo', [AdminProfileController::class, 'updatePhoto'])->middleware('throttle:10,1')->name('admin.profile.photo');
+    Route::delete('profile/photo', [AdminProfileController::class, 'removePhoto'])->middleware('throttle:10,1')->name('admin.profile.photo.remove');
 
     // Rider Management (administrator-facing label for the existing biker records).
     Route::prefix('riders')->middleware('admin.area:riders')->name('admin.riders.')->group(function () {
@@ -195,6 +207,7 @@ Route::middleware(['auth', EnsureActiveAdmin::class])->prefix('admin')->group(fu
         Route::prefix('{rider}/accreditation')->name('accreditation.')->group(function () {
             Route::get('/', [RiderAccreditationController::class, 'show'])->name('show');
             Route::post('documents', [RiderAccreditationController::class, 'verifyDocuments'])->name('documents');
+            Route::get('orientation-capacity', [RiderAccreditationController::class, 'orientationCapacity'])->middleware('throttle:60,1')->name('orientation.capacity');
             Route::post('orientation', [RiderAccreditationController::class, 'scheduleOrientation'])->name('orientation.schedule');
             Route::post('orientation/{orientation}/result', [RiderAccreditationController::class, 'orientationResult'])->name('orientation.result');
             Route::post('inspection', [RiderAccreditationController::class, 'recordInspection'])->name('inspection');

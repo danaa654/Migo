@@ -1,6 +1,7 @@
 import { router, useForm } from '@inertiajs/react';
 import {
     BadgeCheck,
+    Camera,
     ChevronDown,
     KeyRound,
     Mail,
@@ -9,7 +10,7 @@ import {
     UserRound,
     type LucideIcon,
 } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import CustomerShell from '@/components/customer-shell';
 import { Notice } from '@/components/migo-auth-shell';
 import { PasswordField, TextField } from '@/components/migo-form-fields';
@@ -19,6 +20,7 @@ type Props = {
     status?: string | null;
     profile: {
         full_name: string;
+        avatar_url: string | null;
         email: string | null;
         phone: { verified: boolean; display: string | null; legacy: string };
         sign_in_methods: ('google' | 'phone' | 'email' | 'password')[];
@@ -133,6 +135,36 @@ export default function CustomerProfile({ status, profile }: Props) {
         password_confirmation: '',
     });
     const setPw = useForm({ password: '', password_confirmation: '' });
+    const photo = useForm<{ avatar: File | null }>({ avatar: null });
+    const fileInput = useRef<HTMLInputElement>(null);
+    const [preview, setPreview] = useState<string | null>(null);
+    const [photoError, setPhotoError] = useState<string | null>(null);
+    const pickPhoto = (file: File | null) => {
+        setPhotoError(null);
+        if (preview) URL.revokeObjectURL(preview);
+        if (!file) {
+            photo.setData('avatar', null);
+            setPreview(null);
+
+            return;
+        }
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            setPhotoError('The photo must be a JPG, PNG or WEBP file.');
+            photo.setData('avatar', null);
+            setPreview(null);
+
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setPhotoError('The photo must not be larger than 5 MB.');
+            photo.setData('avatar', null);
+            setPreview(null);
+
+            return;
+        }
+        photo.setData('avatar', file);
+        setPreview(URL.createObjectURL(file));
+    };
     const [open, setOpen] = useState(false);
     const { phone } = profile;
 
@@ -155,12 +187,20 @@ export default function CustomerProfile({ status, profile }: Props) {
                 <header
                     className={`${card} flex flex-wrap items-center gap-4 p-6 sm:p-8`}
                 >
-                    <span
-                        aria-hidden
-                        className="flex size-14 shrink-0 items-center justify-center rounded-full bg-m-forest text-lg font-semibold text-white"
-                    >
-                        {initials}
-                    </span>
+                    {profile.avatar_url ? (
+                        <img
+                            src={profile.avatar_url}
+                            alt=""
+                            className="size-14 shrink-0 rounded-full object-cover ring-2 ring-m-line"
+                        />
+                    ) : (
+                        <span
+                            aria-hidden
+                            className="flex size-14 shrink-0 items-center justify-center rounded-full bg-m-forest text-lg font-semibold text-white"
+                        >
+                            {initials}
+                        </span>
+                    )}
                     <div className="min-w-0 flex-1">
                         <h1 className="truncate text-xl font-semibold text-m-ink">
                             {profile.needs_profile
@@ -190,6 +230,95 @@ export default function CustomerProfile({ status, profile }: Props) {
                         can book a ride.
                     </Notice>
                 )}
+
+                {/* Profile photo */}
+                <section className={card} aria-labelledby="photo-heading">
+                    <CardHeader
+                        icon={Camera}
+                        title="Profile photo"
+                        hint="Optional. Your rider sees it so they can find you."
+                    />
+                    <form
+                        className="flex flex-wrap items-center gap-5 px-6 py-5 sm:px-8"
+                        noValidate
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            if (!photo.data.avatar) return;
+                            photo.post('/customer/profile/photo', {
+                                preserveScroll: true,
+                                forceFormData: true,
+                                onSuccess: () => {
+                                    photo.reset();
+                                    pickPhoto(null);
+                                    if (fileInput.current) fileInput.current.value = '';
+                                },
+                            });
+                        }}
+                    >
+                        <h3 id="photo-heading" className="sr-only">
+                            Profile photo
+                        </h3>
+                        {preview || profile.avatar_url ? (
+                            <img
+                                src={preview ?? profile.avatar_url ?? ''}
+                                alt="Profile photo preview"
+                                className="size-20 shrink-0 rounded-full object-cover ring-2 ring-m-line"
+                            />
+                        ) : (
+                            <span
+                                aria-hidden
+                                className="flex size-20 shrink-0 items-center justify-center rounded-full bg-m-forest text-2xl font-semibold text-white"
+                            >
+                                {initials}
+                            </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                            <input
+                                ref={fileInput}
+                                id="avatar"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                className="sr-only"
+                                onChange={(e) => pickPhoto(e.target.files?.[0] ?? null)}
+                            />
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    className={btnGhost}
+                                    onClick={() => fileInput.current?.click()}
+                                    disabled={photo.processing}
+                                >
+                                    {profile.avatar_url ? 'Choose a new photo' : 'Choose a photo'}
+                                </button>
+                                {photo.data.avatar && (
+                                    <button type="submit" disabled={photo.processing} className={btn}>
+                                        {photo.processing ? 'Saving…' : 'Save photo'}
+                                    </button>
+                                )}
+                                {profile.avatar_url && !photo.data.avatar && (
+                                    <button
+                                        type="button"
+                                        className={btnGhost}
+                                        disabled={photo.processing}
+                                        onClick={() =>
+                                            router.delete('/customer/profile/photo', {
+                                                preserveScroll: true,
+                                            })
+                                        }
+                                    >
+                                        Remove photo
+                                    </button>
+                                )}
+                            </div>
+                            <p className="mt-2 text-xs text-m-muted">JPG, PNG or WEBP, up to 5 MB.</p>
+                            {(photoError || photo.errors.avatar) && (
+                                <p role="alert" className="mt-1 text-xs font-medium text-m-redtext">
+                                    {photoError ?? photo.errors.avatar}
+                                </p>
+                            )}
+                        </div>
+                    </form>
+                </section>
 
                 {/* Personal */}
                 <section className={card} aria-labelledby="personal-heading">

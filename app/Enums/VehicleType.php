@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-/** Kind of vehicle a rider drives: two wheels is a "Biker", four wheels is "Angcars". */
+/** Kind of vehicle a rider drives: two wheels is a "Biker", four wheels is "MigoCars". */
 enum VehicleType: string
 {
     case TwoWheel = 'two_wheel';
@@ -12,7 +12,7 @@ enum VehicleType: string
     {
         return match ($this) {
             self::TwoWheel => 'Biker (2 wheels)',
-            self::FourWheel => 'Angcars (4 wheels)',
+            self::FourWheel => 'MigoCars (4 wheels)',
         };
     }
 }

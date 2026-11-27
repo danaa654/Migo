@@ -87,6 +87,11 @@ function SidebarShell({ title, status, wide = false, children }: ShellProps) {
     }).auth.user;
     const name = user?.name ?? 'Customer';
     const initial = name.trim().charAt(0).toUpperCase() || 'C';
+    // Photo the customer chose (HandleInertiaRequests "customerAvatar"); falls back to the initial.
+    const avatar = (props as unknown as { customerAvatar?: string | null }).customerAvatar ?? null;
+    const [avatarFailed, setAvatarFailed] = useState(false);
+    useEffect(() => setAvatarFailed(false), [avatar]);
+    const photo = avatar && !avatarFailed ? avatar : null;
     const isActive = (n: Item) =>
         !!n.href && (path === n.href || !!n.also?.some((p) => path.startsWith(p)));
     const heading = nav.find(isActive)?.label ?? title;
@@ -194,9 +199,13 @@ function SidebarShell({ title, status, wide = false, children }: ShellProps) {
 
                     <div className="relative z-10 space-y-2.5 bg-gradient-to-t from-m-page2 via-m-page2/85 to-transparent p-3 pt-8 dark:from-[#08100D]/85 dark:via-[#08100D]/40">
                         <div className={`flex items-center gap-3 ${collapsed ? 'lg:justify-center' : ''}`} title={collapsed ? name : undefined}>
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-m-solid text-xs font-semibold text-white" aria-hidden>
-                                {initial}
-                            </span>
+                            {photo ? (
+                                <img src={photo} alt="" onError={() => setAvatarFailed(true)} className="size-9 shrink-0 rounded-full object-cover ring-1 ring-m-line" />
+                            ) : (
+                                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-m-solid text-xs font-semibold text-white" aria-hidden>
+                                    {initial}
+                                </span>
+                            )}
                             <span className={`min-w-0 leading-tight ${collapsed ? 'lg:hidden' : ''}`}>
                                 <span className="block truncate text-[13px] font-bold text-m-ink" title={name}>
                                     {name}
@@ -259,9 +268,13 @@ function SidebarShell({ title, status, wide = false, children }: ShellProps) {
                                 <span aria-hidden className="hidden h-6 w-px bg-m-line md:block" />
                                 <ThemeToggle className="size-8!" />
                                 {/* The sidebar (account and logout) is hidden on small screens, so keep them here. */}
-                                <span className="flex size-8 items-center justify-center rounded-full bg-m-solid text-xs font-semibold text-white lg:hidden" title={name} aria-hidden>
-                                    {initial}
-                                </span>
+                                {photo ? (
+                                    <img src={photo} alt="" title={name} className="size-8 rounded-full object-cover ring-1 ring-m-line lg:hidden" />
+                                ) : (
+                                    <span className="flex size-8 items-center justify-center rounded-full bg-m-solid text-xs font-semibold text-white lg:hidden" title={name} aria-hidden>
+                                        {initial}
+                                    </span>
+                                )}
                                 <button
                                     type="button"
                                     onClick={logout}

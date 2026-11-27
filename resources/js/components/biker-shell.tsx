@@ -10,6 +10,7 @@ import {
     MessageSquareWarning,
     Navigation,
     Trophy,
+    User,
     X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -35,7 +36,7 @@ type Props = {
 };
 
 type NavItem = {
-    key: 'dashboard' | 'dispatch' | 'requests' | 'complaints' | 'subscription';
+    key: 'dashboard' | 'dispatch' | 'requests' | 'complaints' | 'subscription' | 'profile';
     href: string;
     label: string;
     icon: LucideIcon;
@@ -47,7 +48,14 @@ const NAV: NavItem[] = [
     { key: 'requests', href: '/biker/service-requests', label: 'Service requests', icon: ClipboardList, needsBooking: true },
     { key: 'subscription', href: '/biker/subscription', label: 'Subscription', icon: CreditCard, needsBooking: true },
     { key: 'complaints', href: '/biker/complaints', label: 'Support', icon: MessageSquareWarning, needsBooking: true },
+    { key: 'profile', href: '/biker/profile', label: 'Profile', icon: User, needsBooking: false },
 ];
+
+/** Header line under "MIGO": the service the rider drives for. Four wheels = MigoCars, two wheels = MigoMoto. */
+const VEHICLE: Record<string, string> = {
+    four_wheel: 'MigoCars',
+    two_wheel: 'MigoMoto',
+};
 
 const logout = () => router.post('/logout');
 const COLLAPSE_KEY = 'migo.biker.sidebar.collapsed';
@@ -66,7 +74,9 @@ export default function BikerShell({
 }: Props) {
     const sub = useBikerSubscription();
     // Photo the rider chose (else the registration selfie). Shared by HandleInertiaRequests as "bikerAvatar".
-    const avatar = (usePage().props as unknown as { bikerAvatar?: string | null }).bikerAvatar ?? null;
+    const shared = usePage().props as unknown as { bikerAvatar?: string | null; bikerVehicle?: string | null };
+    const avatar = shared.bikerAvatar ?? null;
+    const vehicle = shared.bikerVehicle ? VEHICLE[shared.bikerVehicle] : undefined;
     const [avatarFailed, setAvatarFailed] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
     const [drawer, setDrawer] = useState(false);
@@ -158,11 +168,17 @@ export default function BikerShell({
                                 />
                                 <span className={`min-w-0 leading-tight ${hideWhenCollapsed}`}>
                                     <span className="block text-base font-extrabold tracking-wider text-white">MIGO</span>
-                                    <span className="block text-[8px] leading-snug font-medium tracking-wide text-white/80 uppercase">
-                                        Biker
-                                        <br />
-                                        Dashboard
-                                    </span>
+                                    {vehicle ? (
+                                        <span className="block text-[8px] leading-snug font-medium tracking-wide text-white/80 uppercase">
+                                            {vehicle}
+                                        </span>
+                                    ) : (
+                                        <span className="block text-[8px] leading-snug font-medium tracking-wide text-white/80 uppercase">
+                                            Biker
+                                            <br />
+                                            Dashboard
+                                        </span>
+                                    )}
                                 </span>
                             </Link>
                             <button

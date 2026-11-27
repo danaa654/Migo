@@ -17,6 +17,7 @@ type Values = {
     approaching_radius_meters: number;
     trial_hours: number;
     trial_daily_limit: number;
+    orientation_daily_limit: number;
     fare_base_php: number;
     fare_base_km: number;
     fare_per_km_php: number;
@@ -78,7 +79,7 @@ const num = (v: unknown) => (v === '' || v === null || v === undefined ? NaN : N
 function tabOfKey(key: string): TabId {
     if (key.startsWith('fare_') || key.endsWith('_max_passengers')) return 'fares';
     if (key === 'approaching_radius_meters' || key === 'arrival_radius_meters') return 'pickup';
-    if (['location_freshness_seconds', 'auto_offline_seconds', 'trial_hours', 'trial_daily_limit'].includes(key)) return 'riders';
+    if (['location_freshness_seconds', 'auto_offline_seconds', 'trial_hours', 'trial_daily_limit', 'orientation_daily_limit'].includes(key)) return 'riders';
     return 'find';
 }
 
@@ -422,6 +423,11 @@ export default function DispatchSettings({ values, radii, stepOptions, canEdit, 
                     <div className="grid gap-5 sm:grid-cols-2">
                         {field('trial_hours', 'Trial length', `${hoursLabel(n('trial_hours')) || 'Enter 1–720 hours'}. Applies only to trials that start after you save.`, 'hours')}
                         {field('trial_daily_limit', 'Bookings per day', 'Most bookings a trial rider can accept a day (1–50). Applies to running trials right away. Resets at 12:00 AM Philippine time.', 'per day')}
+                    </div>
+                </Card>
+                <Card title="Rider orientation" description="Limits how many riders can be scheduled for orientation on the same day.">
+                    <div className="grid gap-5 sm:grid-cols-2">
+                        {field('orientation_daily_limit', 'Riders per day', 'Most riders that can be scheduled on one day (1–200). A full day cannot take more bookings; cancelled or moved schedules free their seat. Default 30.', 'per day')}
                     </div>
                 </Card>
             </div>

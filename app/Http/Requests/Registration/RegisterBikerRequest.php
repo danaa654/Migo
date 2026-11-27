@@ -87,8 +87,8 @@ class RegisterBikerRequest extends RegistrationRequest
     {
         return [
             ...parent::messages(),
-            'vehicle_type.required' => 'Please choose 2 wheels (Biker) or 4 wheels (Angcars).',
-            'vehicle_type.enum' => 'Please choose 2 wheels (Biker) or 4 wheels (Angcars).',
+            'vehicle_type.required' => 'Please choose 2 wheels (Biker) or 4 wheels (MigoCars).',
+            'vehicle_type.enum' => 'Please choose 2 wheels (Biker) or 4 wheels (MigoCars).',
             'address.required' => 'Home address is required.',
             'license_number.required' => "Driver's license number is required.",
             'license_number.regex' => 'License number may only contain letters, numbers, spaces and dashes.',

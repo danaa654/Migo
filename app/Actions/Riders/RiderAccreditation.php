@@ -3,6 +3,7 @@
 namespace App\Actions\Riders;
 
 use App\Models\AdminProfile;
+use App\Models\DispatchSetting;
 use App\Models\MotorcycleInspection;
 use App\Models\Rider;
 use App\Models\RiderAccreditationHistory;
@@ -89,6 +90,35 @@ class RiderAccreditation
 
     /* ---------------------------------------------------------------- Stage 4: orientation */
 
+    /** Used when the Administrator has never saved the setting (Admin Settings > Riders > Rider orientation). */
+    public const DEFAULT_ORIENTATION_DAILY_LIMIT = 30;
+
+    /** Most riders that can be scheduled for orientation on one day. Adjustable in Admin Settings. */
+    public function orientationDailyLimit(): int
+    {
+        return max(1, (int) DispatchSetting::get('orientation_daily_limit', (string) self::DEFAULT_ORIENTATION_DAILY_LIMIT));
+    }
+
+    /**
+     * Seats used on the calendar day of $day (app timezone). Scheduled, completed and failed orientations take a seat;
+     * cancelled / rescheduled ones give it back. $exceptRiderId leaves out that rider's own open schedule, so moving
+     * a rider within the same day never counts them twice.
+     *
+     * @return array{limit: int, booked: int, remaining: int}
+     */
+    public function orientationCapacity(Carbon $day, ?string $exceptRiderId = null): array
+    {
+        $limit = $this->orientationDailyLimit();
+
+        $booked = RiderOrientation::query()
+            ->whereBetween('scheduled_at', [$day->copy()->startOfDay(), $day->copy()->endOfDay()])
+            ->where('status', '!=', 'cancelled')
+            ->when($exceptRiderId, fn ($q) => $q->whereNot(fn ($w) => $w->where('rider_id', $exceptRiderId)->where('status', 'scheduled')))
+            ->count();
+
+        return ['limit' => $limit, 'booked' => $booked, 'remaining' => max(0, $limit - $booked)];
+    }
+
     /** @param  array{scheduled_at: mixed, location: string, facilitator_id: string, remarks?: ?string}  $data */
     public function scheduleOrientation(Rider $rider, AdminProfile $staff, array $data): RiderOrientation
     {
@@ -105,6 +135,11 @@ class RiderAccreditation
             $at = Carbon::parse($data['scheduled_at']);
             if ($at->isPast()) {
                 throw new AccreditationException('The orientation must be scheduled for a future date and time.');
+            }
+
+            $capacity = $this->orientationCapacity($at, (string) $r->id);
+            if ($capacity['remaining'] < 1) {
+                throw new AccreditationException('Orientation on '.$at->format('M j, Y').' is full ('.$capacity['booked'].' of '.$capacity['limit'].' riders). Please choose another date.');
             }
 
             // A reschedule supersedes the open schedule; the old row is kept (status "cancelled").

@@ -32,6 +32,7 @@ class AdminProfile extends Model
      *  - riders:         rider applications, document verification, orientation, inspection, accreditation
      *  - subscriptions:  subscription management
      *  - bookings:       live booking / dispatch monitor
+     *  - support_dashboard: Support Staff landing page (report counts only, no rider or booking data)
      *  - support:        tickets, complaints, incident reports
      *  - passengers:     passenger list and details (read-only; Support Staff have this one only)
      *  - passengers_manage: suspend / deactivate / reactivate a passenger (Administrator only)
@@ -41,7 +42,7 @@ class AdminProfile extends Model
         self::ROLE_SUPER_ADMIN => ['dashboard', 'riders', 'subscriptions', 'subscriptions_verify', 'subscriptions_manage', 'bookings', 'passengers', 'passengers_manage', 'support', 'reports', 'notifications', 'settings', 'staff'],
         self::ROLE_ADMIN => ['dashboard', 'riders', 'subscriptions', 'subscriptions_verify', 'subscriptions_manage', 'bookings', 'passengers', 'passengers_manage', 'support', 'reports', 'notifications', 'settings'],
         self::ROLE_OPERATIONS => ['dashboard', 'riders', 'subscriptions', 'subscriptions_verify', 'bookings', 'notifications'],
-        self::ROLE_SUPPORT => ['support', 'passengers', 'subscriptions'],
+        self::ROLE_SUPPORT => ['support_dashboard', 'support', 'passengers', 'subscriptions'],
     ];
 
     private const LABELS = [
@@ -79,9 +80,19 @@ class AdminProfile extends Model
         return self::LABELS[$this->role] ?? 'Staff';
     }
 
+    /** Public URL of the staff member's chosen profile photo, or null when none was uploaded. */
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path ? '/storage/'.ltrim($this->avatar_path, '/') : null;
+    }
+
     /** The first page this staff member lands on after signing in. */
     public function homePath(): string
     {
-        return $this->hasArea('dashboard') ? '/admin/dashboard' : '/admin/complaints';
+        if ($this->hasArea('dashboard')) {
+            return '/admin/dashboard';
+        }
+
+        return $this->hasArea('support_dashboard') ? '/admin/support/dashboard' : '/admin/complaints';
     }
 }

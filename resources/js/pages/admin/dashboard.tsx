@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     Bike,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import AdminLayout, { formatDate } from '@/layouts/admin-layout';
+import { adminRoleTheme } from '@/lib/admin-role-theme';
 
 type Rider = {
     id: string;
@@ -236,6 +237,10 @@ export default function Dashboard({
     bookings,
     complaints,
 }: Props) {
+    const { admin } = usePage().props as unknown as {
+        admin: { role: string } | null;
+    };
+    const theme = adminRoleTheme(admin?.role);
     const [refreshing, setRefreshing] = useState(false);
     const today = new Date().toLocaleDateString('en-PH', {
         weekday: 'long',
@@ -265,7 +270,7 @@ export default function Dashboard({
 
     return (
         <AdminLayout title="Dashboard">
-            <section className="relative mb-4 min-h-32 overflow-hidden rounded-2xl border border-m-line bg-linear-to-br from-m-mint via-m-mint to-[#C9E6D3] px-5 py-4 shadow-sm dark:to-[#244A3B]">
+            <section className={`relative mb-4 min-h-32 overflow-hidden rounded-2xl border border-m-line bg-linear-to-br ${theme.banner} px-5 py-4 shadow-sm`}>
                 <img
                     src="/img/header-banner.webp"
                     alt=""
@@ -276,12 +281,13 @@ export default function Dashboard({
 
                 <div className="relative flex flex-wrap items-start justify-between gap-4">
                     <div>
-                        <h2 className="text-xl font-extrabold text-m-forest dark:text-m-ink">
-                            Welcome Back, Admin!
+                        <h2
+                            className={`text-xl font-extrabold ${theme.bannerTitle}`}
+                        >
+                            {theme.greeting}
                         </h2>
                         <p className="mt-0.5 text-sm text-m-body2">
-                            Here&rsquo;s an overview of your Migo management
-                            system.
+                            {theme.tagline}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-3">
                             <p className="inline-flex items-center gap-2 text-sm font-semibold text-m-ink">

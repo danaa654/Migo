@@ -236,6 +236,32 @@ function FormDialog({ kind, onClose, ctx }: FormProps) {
     const [f, setF] = useState<Record<string, any>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [busy, setBusy] = useState(false);
+    const [cap, setCap] = useState<{
+        limit: number;
+        booked: number;
+        remaining: number;
+    } | null>(null);
+
+    // Seats used / left on the day picked in the schedule form (daily limit is set in Admin Settings).
+    useEffect(() => {
+        if (kind !== 'orientation' || !f.scheduled_at) {
+            setCap(null);
+            return;
+        }
+        const ctrl = new AbortController();
+        fetch(
+            `${base}/orientation-capacity?date=${String(f.scheduled_at).slice(0, 10)}`,
+            {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+                signal: ctrl.signal,
+            },
+        )
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => setCap(d))
+            .catch(() => {});
+        return () => ctrl.abort();
+    }, [kind, f.scheduled_at, base]);
 
     useEffect(() => {
         if (!kind) return;
@@ -411,6 +437,8 @@ function FormDialog({ kind, onClose, ctx }: FormProps) {
             !(f.findings ?? '').trim()
         )
             local.findings = 'Findings are required when an inspection fails.';
+        if (kind === 'orientation' && cap && cap.remaining < 1)
+            local.scheduled_at = `This day is full (${cap.booked} of ${cap.limit}). Choose another date.`;
         if (Object.keys(local).length) {
             setErrors(local);
             return;
@@ -641,6 +669,15 @@ function FormDialog({ kind, onClose, ctx }: FormProps) {
                                             }
                                             className={input}
                                         />
+                                        {cap && (
+                                            <span
+                                                className={`mt-1 block text-xs ${cap.remaining < 1 ? 'font-medium text-m-redtext' : 'text-m-muted'}`}
+                                            >
+                                                {cap.remaining < 1
+                                                    ? `Fully booked: ${cap.booked} of ${cap.limit} riders. Choose another date.`
+                                                    : `${cap.booked} of ${cap.limit} riders booked on this day (${cap.remaining} left).`}
+                                            </span>
+                                        )}
                                         <Err k="scheduled_at" />
                                     </label>
                                     <label className="block">
