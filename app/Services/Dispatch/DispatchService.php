@@ -398,7 +398,7 @@ class DispatchService
      */
     public function notifyApproaching(): int
     {
-        $radius = max(50, (int) DispatchSetting::get('approaching_radius_meters', '300'));
+        $radius = max(50, (int) DispatchSetting::get('approaching_radius_meters', '500'));
 
         $rows = DB::table('bookings')
             ->join('rider_locations as l', 'l.rider_id', '=', 'bookings.rider_id')

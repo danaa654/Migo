@@ -198,6 +198,7 @@ export default function RiderShow({
                 currentStaffId={currentStaffId}
                 requiredEquipment={requiredEquipment}
                 requiredDocuments={requiredDocuments}
+                documents={documents}
                 onApplicationAction={setAction}
             />
 

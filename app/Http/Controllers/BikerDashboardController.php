@@ -6,9 +6,11 @@ use App\Actions\Riders\RiderAccreditation;
 use App\Models\Booking;
 use App\Models\BookingRating;
 use App\Support\BikerShellData;
+use App\Support\RiderDocuments;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -29,6 +31,20 @@ class BikerDashboardController extends Controller
             'suspensionReason' => $rider?->isSuspended() ? $rider->suspension_reason : null,
             // Accreditation progress (rider-safe view: no staff names or internal remarks). Additive prop.
             'accreditation' => $rider ? app(RiderAccreditation::class)->summary($rider, forRider: true) : null,
+            // What the rider submitted: their own profile details and the four uploaded documents (view only).
+            'profile' => $rider ? [
+                'full_name' => $rider->full_name,
+                'email' => $rider->email,
+                'phone' => $rider->phone,
+                'address' => $rider->address,
+                'photo_url' => $rider->profile_picture && Storage::disk('public')->exists($rider->profile_picture) ? '/storage/'.$rider->profile_picture : null,
+                'vehicle_type' => $rider->vehicle_type?->label(),
+                'license_number' => $rider->license_number,
+                'license_expiry' => $rider->license_expiry?->toDateString(),
+                'plate_number' => $rider->motorcycle_plate_number,
+                'registered_at' => $rider->created_at?->toIso8601String(),
+            ] : null,
+            'documents' => $rider ? RiderDocuments::forRider($rider) : [],
             'notifications' => BikerShellData::notifications($user->id),
             // Trip / earnings / rating summary for the dashboard cards. Additive prop; null when unavailable.
             'stats' => $rider ? $this->stats($rider->id) : null,

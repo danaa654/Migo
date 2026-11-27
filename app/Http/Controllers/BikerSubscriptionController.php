@@ -30,6 +30,8 @@ class BikerSubscriptionController extends Controller
         $paid = RiderSubscription::where('rider_id', $rider->id)->where('subscription_type', 'paid')->effective()->orderByDesc('expires_at')->first();
         $next = RiderSubscription::where('rider_id', $rider->id)->where('subscription_type', 'paid')->where('starts_at', '>', now())->orderBy('starts_at')->first();
         $iso = fn ($d) => $d?->toIso8601String();
+        // Length of THIS rider's trial, as it was when it started (the setting may have changed since).
+        $trialDays = $trial ? max(1, (int) ceil($trial->starts_at->diffInHours($trial->expires_at) / 24)) : 1;
 
         return Inertia::render('biker/biker-subscription', BikerShellData::props($request->user()) + [
             'status' => $request->session()->get('status'),
@@ -37,8 +39,9 @@ class BikerSubscriptionController extends Controller
             'access' => ['allowed' => $access['allowed'], 'code' => $access['code'], 'message' => $access['message'], 'type' => $access['type']],
             'trial' => $trial ? [
                 'starts_at' => $iso($trial->starts_at), 'expires_at' => $iso($trial->expires_at), 'active' => $trial->expires_at->isFuture(),
-                'day' => min(3, max(1, (int) floor($trial->starts_at->diffInHours(now()) / 24) + 1)),
-                'daily_limit' => SubscriptionService::TRIAL_DAILY_LIMIT,
+                'day' => min($trialDays, max(1, (int) floor($trial->starts_at->diffInHours(now()) / 24) + 1)),
+                'total_days' => $trialDays,
+                'daily_limit' => $subs->trialDailyLimit(),
                 'used_today' => $subs->acceptedToday($rider),
             ] : null,
             'paid' => $paid ? ['plan' => $paid->plan_name_snapshot, 'color' => SubscriptionPlan::whereKey($paid->subscription_plan_id)->value('color'), 'duration' => $paid->duration_snapshot, 'amount' => $paid->price_snapshot,

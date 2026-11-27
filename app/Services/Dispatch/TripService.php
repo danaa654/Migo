@@ -36,7 +36,7 @@ class TripService
             $radius = (int) DispatchSetting::get('arrival_radius_meters', '300');
             if ($radius > 0) {
                 $loc = RiderLocation::where('rider_id', $rider->id)->first();
-                if (! $loc || $loc->last_location_update->timestamp < now()->timestamp - 60) {
+                if (! $loc || $loc->last_location_update->timestamp < now()->timestamp - max(15, (int) DispatchSetting::get('location_freshness_seconds', '60'))) {
                     return $this->fail('no_location', 'Your GPS location is out of date. Wait for it to update and try again.');
                 }
                 $meters = DispatchService::distanceMeters($loc->latitude, $loc->longitude, (float) $b->pickup_lat, (float) $b->pickup_lng);

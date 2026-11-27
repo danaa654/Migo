@@ -252,6 +252,11 @@ export default function LivePhotoField({
             canvas.height = Math.round(video.videoHeight * scale);
             const ctx = canvas.getContext('2d');
             if (!ctx) throw new Error('no canvas');
+            // The live preview is mirrored like a normal selfie camera (see the <video> below). Draw the saved photo
+            // mirrored too, so the picture the person reviews and uploads looks exactly like what they saw while
+            // taking it. Face verification above still checks the original, un-mirrored frame.
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const blob = await new Promise<Blob | null>((resolve) =>

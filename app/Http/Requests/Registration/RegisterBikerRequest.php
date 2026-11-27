@@ -61,7 +61,7 @@ class RegisterBikerRequest extends RegistrationRequest
     private function uniqueIgnoringSpacesAndDashes(string $column, string $message): \Closure
     {
         return function (string $attribute, mixed $value, \Closure $fail) use ($column, $message): void {
-            $key = preg_replace('/[\s\-]+/', '', strtoupper((string) $value));
+            $key = \App\Support\PlateNumber::normalize((string) $value);
             if ($key === '') {
                 return;
             }

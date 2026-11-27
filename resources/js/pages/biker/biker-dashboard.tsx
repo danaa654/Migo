@@ -23,6 +23,8 @@ import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { Notifications } from '@/components/biker-notifications';
 import { DashboardSubscriptionCard, useBikerSubscription } from '@/components/biker-plan';
+import BikerApplicationCard from '@/components/biker-application-card';
+import type { BikerDocument, BikerProfile } from '@/components/biker-application-card';
 import BikerShell from '@/components/biker-shell';
 
 type Status = 'pending' | 'approved' | 'rejected' | null;
@@ -76,6 +78,8 @@ type Props = {
     notifications?: Notifications;
     accreditation?: Accreditation | null;
     stats?: Stats;
+    profile?: BikerProfile | null;
+    documents?: BikerDocument[];
 };
 
 /* ---------- helpers ---------- */
@@ -594,6 +598,8 @@ export default function BikerDashboard({
     notifications,
     accreditation,
     stats,
+    profile,
+    documents = [],
 }: Props) {
     const subscription = useBikerSubscription();
     const suspended = accountStatus === 'suspended';
@@ -705,6 +711,17 @@ export default function BikerDashboard({
                 {accreditation && (
                     <div className={o.trail}>
                         <CheckpointTrail accreditation={accreditation} canBook={canBook} />
+                    </div>
+                )}
+
+                {profile && (
+                    <div className={canBook ? 'order-5' : 'order-3'}>
+                        <BikerApplicationCard
+                            profile={profile}
+                            documents={documents}
+                            documentStatus={accreditation?.statuses.document_verification}
+                            documentRemarks={accreditation?.document_remarks}
+                        />
                     </div>
                 )}
 

@@ -13,7 +13,7 @@ type Props = {
     status?: string | null;
     required: boolean;
     access: { allowed: boolean; code: string; message: string; type: 'paid' | 'trial' | null };
-    trial: { starts_at: string; expires_at: string; active: boolean; day: number; daily_limit: number; used_today: number } | null;
+    trial: { starts_at: string; expires_at: string; active: boolean; day: number; total_days: number; daily_limit: number; used_today: number } | null;
     paid: { plan: string; color: string | null; duration: string; amount: number; starts_at: string; expires_at: string } | null;
     next: { plan: string; color: string | null; starts_at: string; expires_at: string } | null;
     plans: Plan[];
@@ -168,7 +168,7 @@ export default function BikerSubscription(p: Props) {
                                 <>
                                     <p className="flex flex-wrap items-center gap-2 text-lg font-extrabold text-[var(--b-ink)]">
                                         Free Trial
-                                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-800">Day {p.trial.day} of 3</span>
+                                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-800">Day {p.trial.day} of {p.trial.total_days}</span>
                                     </p>
                                     <p className="text-sm text-[var(--b-body)]">
                                         {p.trial.used_today} of {p.trial.daily_limit} bookings used today · {Math.max(0, p.trial.daily_limit - p.trial.used_today)} remaining today

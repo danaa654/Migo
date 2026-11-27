@@ -29,6 +29,16 @@ class RiderManagementController extends Controller
     /** Sortable columns the client may ask for (whitelist; anything else falls back to the default). */
     private const SORTS = ['full_name', 'email', 'phone', 'created_at', 'application_status', 'accreditation_status', 'account_status'];
 
+    /**
+     * Pipeline stages an admin can filter by. Each condition is the same rule stats() uses to count that stage, so the
+     * number on the stage and the rows shown after clicking it always agree.
+     */
+    private const STAGES = [
+        'documents' => "application_status = 'approved' and document_verification_status <> 'verified' and accreditation_status <> 'revoked'",
+        'orientation' => "document_verification_status = 'verified' and orientation_status <> 'completed' and accreditation_status <> 'revoked'",
+        'inspection' => "orientation_status = 'completed' and inspection_status <> 'passed' and accreditation_status <> 'revoked'",
+    ];
+
     /** Supporting documents: URL type => [riders column, label]. */
     private const DOCUMENTS = [
         'license' => ['license_document', "Driver's License"],
@@ -43,6 +53,7 @@ class RiderManagementController extends Controller
         $verification = in_array($request->query('verification'), ['pending', 'approved', 'rejected'], true) ? $request->query('verification') : null;
         $accreditation = in_array($request->query('accreditation'), ['not_accredited', 'for_final_approval', 'accredited', 'revoked'], true) ? $request->query('accreditation') : null;
         $account = in_array($request->query('account'), ['active', 'inactive', 'suspended'], true) ? $request->query('account') : null;
+        $stage = array_key_exists((string) $request->query('stage'), self::STAGES) ? (string) $request->query('stage') : null;
         $sort = in_array($request->query('sort'), self::SORTS, true) ? $request->query('sort') : 'created_at';
         $direction = $request->query('direction') === 'asc' ? 'asc' : 'desc';
 
@@ -59,6 +70,7 @@ class RiderManagementController extends Controller
             ->when($verification, fn ($q, $v) => $q->where('application_status', $v))
             ->when($accreditation, fn ($q, $a) => $q->where('accreditation_status', $a))
             ->when($account, fn ($q, $a) => $q->where('account_status', $a))
+            ->when($stage, fn ($q, $s) => $q->whereRaw('('.self::STAGES[$s].')'))
             ->orderBy($sort, $direction)
             ->orderBy('id')
             ->paginate(self::PER_PAGE)
@@ -79,7 +91,7 @@ class RiderManagementController extends Controller
         return Inertia::render('admin/riders/index', [
             'stats' => $this->stats(),
             'riders' => $riders,
-            'filters' => ['search' => $search, 'verification' => $verification, 'accreditation' => $accreditation, 'account' => $account, 'sort' => $sort, 'direction' => $direction],
+            'filters' => ['search' => $search, 'verification' => $verification, 'accreditation' => $accreditation, 'account' => $account, 'stage' => $stage, 'sort' => $sort, 'direction' => $direction],
         ]);
     }
 

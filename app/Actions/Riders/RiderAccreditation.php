@@ -228,7 +228,7 @@ class RiderAccreditation
                 if ($expiry->isPast()) {
                     $problems[] = 'the registration has expired';
                 }
-                if ($plate !== Str::upper(trim((string) $r->motorcycle_plate_number))) {
+                if (! \App\Support\PlateNumber::same($plate, $r->motorcycle_plate_number)) {
                     $problems[] = 'the plate number does not match the one on the rider\'s application';
                 }
                 if ($problems) {

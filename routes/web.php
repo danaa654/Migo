@@ -11,6 +11,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\BikerAccreditationController;
 use App\Http\Controllers\BikerComplaintController;
 use App\Http\Controllers\BikerDashboardController;
+use App\Http\Controllers\BikerDocumentController;
 use App\Http\Controllers\BikerServiceRequestController;
 use App\Http\Controllers\CustomerAuth\CustomerPhoneController;
 use App\Http\Controllers\CustomerAuth\EmailOtpController;
@@ -134,6 +135,9 @@ Route::middleware(['auth', 'role:biker'])->prefix('biker')->group(function () {
 
     // Read-only accreditation progress for the signed-in biker. Riders cannot change any accreditation status.
     Route::get('accreditation', BikerAccreditationController::class)->name('biker.accreditation');
+
+    // The rider's own submitted documents (view only). No rider id in the URL: it is always the signed-in rider's files.
+    Route::get('documents/{type}', BikerDocumentController::class)->whereIn('type', array_keys(\App\Support\RiderDocuments::TYPES))->middleware('throttle:60,1')->name('biker.documents');
 
     // Restricted biker function: only bikers whose application an administrator has approved.
     Route::get('service-requests', BikerServiceRequestController::class)->middleware('biker.approved')->name('biker.service-requests');

@@ -22,6 +22,7 @@ use Illuminate\Validation\ValidationException;
  */
 class SubscriptionService
 {
+    /** Defaults, used until an administrator saves trial_hours / trial_daily_limit in Admin Settings. */
     public const TRIAL_HOURS = 72;
 
     public const TRIAL_DAILY_LIMIT = 3;
@@ -36,6 +37,30 @@ class SubscriptionService
 
     // ------------------------------------------------------------------ free trial
 
+    /** Trial length from Admin Settings. Read when a trial STARTS, so running trials keep the length they were given. */
+    public function trialHours(): int
+    {
+        return max(1, min(720, (int) DispatchSetting::get('trial_hours', (string) self::TRIAL_HOURS)));
+    }
+
+    /** Accepted bookings per Philippine day during a trial. Read live, so a change applies to running trials too. */
+    public function trialDailyLimit(): int
+    {
+        return max(1, min(50, (int) DispatchSetting::get('trial_daily_limit', (string) self::TRIAL_DAILY_LIMIT)));
+    }
+
+    /** 72 -> "3 days", 24 -> "1 day", 36 -> "36 hours". */
+    public static function trialLengthLabel(int $hours): string
+    {
+        if ($hours % 24 === 0) {
+            $days = intdiv($hours, 24);
+
+            return $days.($days === 1 ? ' day' : ' days');
+        }
+
+        return $hours.($hours === 1 ? ' hour' : ' hours');
+    }
+
     /** Starts the one free trial of a newly accredited rider. Returns null when not eligible or already used. */
     public function startTrial(Rider $rider): ?RiderSubscription
     {
@@ -44,20 +69,22 @@ class SubscriptionService
         }
         // Identity = the rider's licence number (verified in person during accreditation); falls back to the rider id.
         $identity = hash('sha256', Str::lower(trim((string) $rider->license_number)) ?: (string) $rider->id);
+        $hours = $this->trialHours();
+        $limit = $this->trialDailyLimit();
 
         try {
-            return DB::transaction(function () use ($rider, $identity) {
+            return DB::transaction(function () use ($rider, $identity, $hours, $limit) {
                 if (RiderSubscription::where('trial_identity', $identity)->exists()) {
                     return null;
                 }
                 $now = now();
                 $trial = RiderSubscription::create([
-                    'rider_id' => $rider->id, 'plan_name_snapshot' => 'Free Trial', 'duration_snapshot' => self::TRIAL_HOURS.' hours',
+                    'rider_id' => $rider->id, 'plan_name_snapshot' => 'Free Trial', 'duration_snapshot' => $hours.' hours',
                     'price_snapshot' => 0, 'subscription_type' => 'trial', 'status' => 'active',
-                    'starts_at' => $now, 'expires_at' => $now->copy()->addHours(self::TRIAL_HOURS), 'trial_identity' => $identity,
+                    'starts_at' => $now, 'expires_at' => $now->copy()->addHours($hours), 'trial_identity' => $identity,
                 ]);
                 $this->notify($rider, 'subscription_trial_started', 'Your free trial has started',
-                    'Your MIGO free trial is now active! You can accept up to '.self::TRIAL_DAILY_LIMIT.' bookings per day for 3 days. Enjoy your ride with MIGO!');
+                    'Your MIGO free trial is now active! You can accept up to '.$limit.($limit === 1 ? ' booking' : ' bookings').' per day for '.self::trialLengthLabel($hours).'. Enjoy your ride with MIGO!');
 
                 return $trial;
             });
@@ -115,12 +142,13 @@ class SubscriptionService
         $trial = RiderSubscription::where('rider_id', $rider->id)->where('subscription_type', 'trial')->effective()->first();
         if ($trial) {
             $used = $this->acceptedToday($rider, $lock);
-            $left = max(0, self::TRIAL_DAILY_LIMIT - $used);
+            $limit = $this->trialDailyLimit();
+            $left = max(0, $limit - $used);
             $base = ['type' => 'trial', 'subscription' => $trial, 'used_today' => $used, 'remaining_today' => $left];
 
             return $left > 0
                 ? ['allowed' => true, 'code' => 'ok', 'message' => 'Free trial active.'] + $base
-                : ['allowed' => false, 'code' => 'trial_daily_limit', 'message' => 'Your free trial limit of '.self::TRIAL_DAILY_LIMIT.' bookings for today has been reached. Your booking allowance will reset at 12:00 AM.'] + $base;
+                : ['allowed' => false, 'code' => 'trial_daily_limit', 'message' => 'Your free trial limit of '.$limit.($limit === 1 ? ' booking' : ' bookings').' for today has been reached. Your booking allowance will reset at 12:00 AM.'] + $base;
         }
 
         if (SubscriptionPayment::where('rider_id', $rider->id)->where('status', 'pending')->where('created_at', '>=', now()->subMinutes(30))->exists()) {

@@ -49,6 +49,8 @@ type Filters = {
     verification: string | null;
     accreditation: string | null;
     account: string | null;
+    /** Pipeline stage: documents | orientation | inspection (the other stages use the status filters). */
+    stage: string | null;
     sort: string;
     direction: 'asc' | 'desc';
 };
@@ -244,7 +246,8 @@ export default function RiderIndex({ stats, riders, filters }: Props) {
         filters.search ||
         filters.verification ||
         filters.accreditation ||
-        filters.account
+        filters.account ||
+        filters.stage
     );
 
     /** Re-queries the server (filters, sort and page all live in the URL, so refresh and back/forward keep working). */
@@ -255,6 +258,7 @@ export default function RiderIndex({ stats, riders, filters }: Props) {
         if (q.verification) params.verification = q.verification;
         if (q.accreditation) params.accreditation = q.accreditation;
         if (q.account) params.account = q.account;
+        if (q.stage) params.stage = q.stage;
         if (q.sort !== 'created_at' || q.direction !== 'desc') {
             params.sort = q.sort;
             params.direction = q.direction;
@@ -284,20 +288,22 @@ export default function RiderIndex({ stats, riders, filters }: Props) {
             verification: null,
             accreditation: null,
             account: null,
+            stage: null,
         });
     };
     /** Pipeline / summary shortcuts: replace the status filters with exactly one. */
     const only = (
-        f: Partial<Pick<Filters, 'verification' | 'accreditation' | 'account'>>,
+        f: Partial<Pick<Filters, 'verification' | 'accreditation' | 'account' | 'stage'>>,
     ) =>
         visit({
             verification: null,
             accreditation: null,
             account: null,
+            stage: null,
             ...f,
         });
     const toggle = (
-        key: 'verification' | 'accreditation' | 'account',
+        key: 'verification' | 'accreditation' | 'account' | 'stage',
         value: string,
     ) => (filters[key] === value ? only({}) : only({ [key]: value }));
 
@@ -487,18 +493,24 @@ export default function RiderIndex({ stats, riders, filters }: Props) {
                             label="Document Verification"
                             value={stats.pending_documents}
                             tone="bg-[#F59E0B]/10 text-[#F59E0B]"
+                            active={filters.stage === 'documents'}
+                            onClick={() => toggle('stage', 'documents')}
                         />
                         <PipelineStage
                             icon={GraduationCap}
                             label="Orientation"
                             value={stats.pending_orientation}
                             tone="bg-m-mint text-m-accent"
+                            active={filters.stage === 'orientation'}
+                            onClick={() => toggle('stage', 'orientation')}
                         />
                         <PipelineStage
                             icon={Wrench}
                             label="Motorcycle Inspection"
                             value={stats.pending_inspection}
                             tone="bg-m-mint text-m-accent"
+                            active={filters.stage === 'inspection'}
+                            onClick={() => toggle('stage', 'inspection')}
                         />
                         <PipelineStage
                             icon={ClipboardCheck}

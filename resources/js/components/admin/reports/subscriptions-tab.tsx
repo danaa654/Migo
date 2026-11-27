@@ -1,4 +1,4 @@
-import { BadgeCheck, CalendarClock, CircleAlert, Gift, RefreshCw, TrendingUp, Wallet } from 'lucide-react';
+import { BadgeCheck, CalendarClock, CircleAlert, Gift, RefreshCw, TrendingUp, UserX, Wallet } from 'lucide-react';
 import { colorFor, planStyle } from '@/lib/plan-color';
 import { DailyBars, Delta, Kpi, Legend, Meter, Panel, pct, peso, pesoShort, Row } from './ui';
 
@@ -16,7 +16,7 @@ export type SubscriptionsData = {
     previous_failed: Failed;
     trend: { date: string; gross: number; new: number; renewals: number; expirations: number }[];
 };
-type Trials = { started: number; converted: number; rate: number | null };
+type Trials = { started: number; converted: number; rate: number | null; ended: number; no_trips: number; no_trips_rate: number | null };
 type Failed = { failed: number; failed_value: number; abandoned: number };
 
 const RENEWAL = '#1B7F5C';
@@ -56,6 +56,7 @@ export default function SubscriptionsTab({ data }: { data: SubscriptionsData }) 
     const { now, trials, previous_trials: pt, lifecycle: l, failed, previous_failed: pf } = data;
     const maxMethod = Math.max(1, ...data.methods.map((m) => m.gross));
     const rateDiff = trials.rate !== null && pt.rate !== null ? Math.round((trials.rate - pt.rate) * 10) / 10 : null;
+    const noTripDiff = trials.no_trips_rate !== null && pt.no_trips_rate !== null ? Math.round((trials.no_trips_rate - pt.no_trips_rate) * 10) / 10 : null;
 
     return (
         <div className="space-y-5">
@@ -70,6 +71,21 @@ export default function SubscriptionsTab({ data }: { data: SubscriptionsData }) 
                     tone="good"
                 />
                 <Kpi icon={Wallet} label="Gross revenue" value={peso(data.gross)} note={<>{data.purchases} payment{data.purchases === 1 ? '' : 's'} · <Delta now={data.gross} before={data.previous_gross} /></>} tone="good" />
+            </section>
+
+            <section aria-label="Trial quality">
+                <Kpi
+                    icon={UserX}
+                    label="Trials that ended with no completed trip"
+                    value={trials.ended === 0 ? '—' : `${trials.no_trips} of ${trials.ended} (${pct(trials.no_trips_rate)})`}
+                    note={
+                        <>
+                            Riders who never got a completed trip during their trial, so they never had a fair try.
+                            {noTripDiff !== null && ` ${noTripDiff > 0 ? '+' : ''}${noTripDiff} pts vs previous.`}
+                        </>
+                    }
+                    tone={trials.no_trips_rate !== null && trials.no_trips_rate >= 50 ? 'warn' : 'default'}
+                />
             </section>
 
             <section aria-label="Revenue per plan" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

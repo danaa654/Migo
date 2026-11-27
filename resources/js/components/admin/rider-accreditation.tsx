@@ -104,6 +104,15 @@ type RiderLite = {
     has_account: boolean;
 };
 
+/** A file the rider uploaded when applying (served to staff by /admin/riders/{id}/documents/{type}). */
+type UploadedDoc = {
+    type: string;
+    label: string;
+    available: boolean;
+    url: string | null;
+    is_image: boolean;
+};
+
 type Props = {
     rider: RiderLite;
     accreditation: AccreditationSummary;
@@ -111,6 +120,8 @@ type Props = {
     currentStaffId: string | null;
     requiredEquipment: string[];
     requiredDocuments: string[];
+    /** Uploaded copies, so staff can open each one while recording the in-person check. */
+    documents?: UploadedDoc[];
     onApplicationAction: (a: 'approve' | 'reject') => void;
 };
 
@@ -213,6 +224,7 @@ function FormDialog({ kind, onClose, ctx }: FormProps) {
         staff,
         requiredEquipment,
         requiredDocuments,
+        documents = [],
     } = ctx;
     const base = `/admin/riders/${rider.id}/accreditation`;
     const lastInspection = latest(acc.inspections)[0];
@@ -535,18 +547,46 @@ function FormDialog({ kind, onClose, ctx }: FormProps) {
                                         <legend className="mb-1 text-sm font-medium">
                                             Originals physically checked
                                         </legend>
+                                        <p className="mb-2 text-xs text-m-muted">
+                                            Open the copy the rider uploaded to
+                                            compare it with the original before
+                                            you tick it.
+                                        </p>
                                         <div className="space-y-2">
-                                            {requiredDocuments.map((d) => (
-                                                <Check
-                                                    key={d}
-                                                    checked={!!f.checked?.[d]}
-                                                    onChange={(v) =>
-                                                        toggle('checked', d, v)
-                                                    }
-                                                >
-                                                    {docLabel[d] ?? humanize(d)}
-                                                </Check>
-                                            ))}
+                                            {requiredDocuments.map((d) => {
+                                                const up = documents.find(
+                                                    (x) => x.type === d,
+                                                );
+                                                return (
+                                                    <div
+                                                        key={d}
+                                                        className="flex items-center justify-between gap-3"
+                                                    >
+                                                        <Check
+                                                            checked={!!f.checked?.[d]}
+                                                            onChange={(v) =>
+                                                                toggle('checked', d, v)
+                                                            }
+                                                        >
+                                                            {docLabel[d] ?? humanize(d)}
+                                                        </Check>
+                                                        {up?.available && up.url ? (
+                                                            <a
+                                                                href={up.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className={`inline-flex shrink-0 items-center gap-1 rounded-md border border-m-accent px-2.5 py-1 text-xs font-medium text-m-accent hover:bg-m-mint ${ring}`}
+                                                            >
+                                                                View uploaded copy
+                                                            </a>
+                                                        ) : (
+                                                            <span className="shrink-0 text-xs text-m-red">
+                                                                No file uploaded
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </fieldset>
                                     <div>
@@ -1467,6 +1507,7 @@ export default function RiderAccreditationPanel(props: Props) {
                     currentStaffId,
                     requiredEquipment: props.requiredEquipment,
                     requiredDocuments: props.requiredDocuments,
+                    documents: props.documents,
                 }}
             />
         </section>

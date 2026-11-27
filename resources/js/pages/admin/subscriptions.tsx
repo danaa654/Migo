@@ -57,6 +57,14 @@ const TABS: [Props['tab'], string, LucideIcon][] = [
     ['plans', 'Plans', Layers],
 ];
 
+/** "72 hours" -> "3-day trial", "36 hours" -> "36-hour trial". The length is stored on each trial, so old trials keep their own. */
+function trialLabel(duration: string | null | undefined): string {
+    const hours = parseInt(duration ?? '', 10);
+    if (!Number.isFinite(hours) || hours <= 0) return 'Free trial';
+
+    return hours % 24 === 0 ? `${hours / 24}-day trial` : `${hours}-hour trial`;
+}
+
 const PILL: Record<string, string> = {
     active: 'bg-emerald-100 text-emerald-800', scheduled: 'bg-sky-100 text-sky-800', expiring: 'bg-amber-100 text-amber-800', expired: 'bg-slate-200 text-slate-700',
     pending: 'bg-amber-100 text-amber-800', verified: 'bg-emerald-100 text-emerald-800', failed: 'bg-red-100 text-red-800', cancelled: 'bg-slate-200 text-slate-700', refunded: 'bg-slate-200 text-slate-700',
@@ -318,7 +326,7 @@ export default function Subscriptions(p: Props) {
                                         return (
                                             <tr key={s.id} className="border-b border-m-line last:border-0 hover:bg-m-mint/40">
                                                 <td className="px-4 py-3"><p className="font-semibold text-m-ink">{s.rider}</p><p className="text-xs text-m-muted">{s.email}</p></td>
-                                                <td className="px-4 py-3">{s.type === 'trial' ? <span className="inline-flex rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">Free trial</span> : <PlanChip name={s.plan} colors={p.planColors} />}<p className="mt-1 text-xs text-m-muted">{s.type === 'trial' ? '3-day trial' : `${s.duration} · ${peso(s.price)}`}</p></td>
+                                                <td className="px-4 py-3">{s.type === 'trial' ? <span className="inline-flex rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">Free trial</span> : <PlanChip name={s.plan} colors={p.planColors} />}<p className="mt-1 text-xs text-m-muted">{s.type === 'trial' ? trialLabel(s.duration) : `${s.duration} · ${peso(s.price)}`}</p></td>
                                                 <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${PILL[s.state]}`}>{s.type === 'trial' && s.state === 'active' ? 'trial' : s.state}</span></td>
                                                 <td className="min-w-56 px-4 py-3">
                                                     <p className="text-xs text-m-body">{day(s.starts_at)} → <b>{day(s.expires_at)}</b></p>

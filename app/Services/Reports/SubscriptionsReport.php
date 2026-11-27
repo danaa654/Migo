@@ -27,7 +27,10 @@ class SubscriptionsReport
             ->when($type, fn ($q, $t) => $q->where('subscription_type', $t));
     }
 
-    /** Trials started in the range, and how many of those riders have paid since. */
+    /**
+     * Trials started in the range (and how many of those riders have paid since), plus trials that ENDED in the range
+     * and how many of those never had a completed trip during their trial, so the rider never had a fair try.
+     */
     private function trials(CarbonInterface $from, CarbonInterface $to): array
     {
         $base = DB::table('rider_subscriptions as t')
@@ -39,7 +42,21 @@ class SubscriptionsReport
             ->whereColumn('p.rider_id', 't.rider_id')->where('p.status', 'verified')
             ->whereColumn(DB::raw('COALESCE(p.verified_at, p.created_at)'), '>=', 't.starts_at'))->count();
 
-        return ['started' => $started, 'converted' => $converted, 'rate' => $this->pct($converted, $started)];
+        // Only trials that have really ended (a range reaching into the future stops at now).
+        $until = $to->lt(now()) ? $to : now();
+        $ended = DB::table('rider_subscriptions as t')
+            ->where('t.subscription_type', 'trial')->where('t.status', '<>', 'cancelled')
+            ->whereBetween('t.expires_at', [$this->stamp($from), $this->stamp($until)]);
+        $endedCount = (int) (clone $ended)->count();
+        $noTrips = (int) (clone $ended)->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('bookings as b')
+            ->whereColumn('b.rider_id', 't.rider_id')->where('b.booking_status', 'completed')
+            ->whereColumn(DB::raw('COALESCE(b.completed_at, b.requested_at, b.created_at)'), '>=', 't.starts_at')
+            ->whereColumn(DB::raw('COALESCE(b.completed_at, b.requested_at, b.created_at)'), '<=', 't.expires_at'))->count();
+
+        return [
+            'started' => $started, 'converted' => $converted, 'rate' => $this->pct($converted, $started),
+            'ended' => $endedCount, 'no_trips' => $noTrips, 'no_trips_rate' => $this->pct($noTrips, $endedCount),
+        ];
     }
 
     private function failed(CarbonInterface $from, CarbonInterface $to): array
