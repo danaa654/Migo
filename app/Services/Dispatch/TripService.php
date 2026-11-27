@@ -218,7 +218,7 @@ class TripService
             'id' => $b->id, 'reference' => $b->booking_reference, 'status' => $b->booking_status,
             'service_type' => $b->service()->value, 'service_label' => $b->service()->label(),
             'passenger_count' => $b->passenger_count, 'recipient_name' => $b->recipient_name, 'item_description' => $b->item_description,
-            'package_size' => $b->package_size, 'notes' => $b->notes,
+            'package_size' => $b->package_size, 'delivery_vehicle' => $b->service()->isDelivery() ? $b->vehicleType()->value : null, 'notes' => $b->notes,
             'pickup_location' => $b->pickup_location, 'destination' => $b->destination,
             'pickup' => $b->pickup_lat !== null ? ['lat' => $b->pickup_lat, 'lng' => $b->pickup_lng] : null,
             'dest' => $b->destination_lat !== null ? ['lat' => $b->destination_lat, 'lng' => $b->destination_lng] : null,

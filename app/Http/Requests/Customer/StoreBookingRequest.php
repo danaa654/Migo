@@ -49,6 +49,8 @@ class StoreBookingRequest extends FormRequest
                 : ['nullable'],
             'item_description' => $delivery ? ['required', 'string', 'min:3', 'max:255'] : ['nullable'],
             'package_size' => $delivery ? ['required', Rule::in(array_keys(ServiceType::PACKAGE_SIZES))] : ['nullable'],
+            // Deliveries: motorcycle or car. A Large package is always a car (enforced again in DispatchService).
+            'delivery_vehicle' => $delivery ? ['nullable', Rule::enum(\App\Enums\VehicleType::class)] : ['nullable'],
             'pickup_location' => ['required', 'string', 'min:5', 'max:255'],
             'destination' => ['required', 'string', 'min:5', 'max:255', 'different:pickup_location'],
             // The pickup point is REQUIRED: riders are matched by distance to it. The destination pin is REQUIRED too: the fare is calculated from it and shown before the customer confirms.
@@ -76,6 +78,7 @@ class StoreBookingRequest extends FormRequest
             'item_description.min' => 'Describe the item in a few words.',
             'package_size.required' => 'Choose the package size.',
             'package_size.in' => 'Choose the package size.',
+            'delivery_vehicle.enum' => 'Choose Motorcycle or Car for the delivery.',
             'pickup_location.required' => 'Enter your pickup location.',
             'pickup_location.min' => 'Pickup location is too short. Add a street, barangay or landmark.',
             'destination.required' => 'Enter your destination.',

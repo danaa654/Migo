@@ -21,7 +21,7 @@ class CustomerBookingController extends Controller
 {
     private const COLUMNS = ['id', 'booking_reference', 'pickup_location', 'destination', 'booking_status', 'booking_date', 'created_at',
         'pickup_lat', 'pickup_lng', 'destination_lat', 'destination_lng', 'estimated_distance', 'estimated_duration', 'estimated_fare', 'final_fare', 'service_type', 'passenger_count', 'notes', 'recipient_name',
-        'recipient_phone', 'item_description', 'package_size'];
+        'recipient_phone', 'item_description', 'package_size', 'delivery_vehicle'];
 
     /** Book a Ride form (or the current active booking, since only one is allowed at a time). */
     public function create(Request $request): Response

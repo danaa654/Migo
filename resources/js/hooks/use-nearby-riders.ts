@@ -19,6 +19,8 @@ const REFRESH_MS = 12_000;
 export function useNearbyRiders(
     service: ServiceKey | null,
     center: { lat: number; lng: number } | null,
+    /** MigoDala only: 'two_wheel' or 'four_wheel', so the count and markers match the vehicle chosen. */
+    vehicle: string | null = null,
 ): NearbyRiders | null {
     const [data, setData] = useState<NearbyRiders | null>(null);
     const lat = Number((center?.lat ?? DEFAULT_CENTER.lat).toFixed(3));
@@ -40,6 +42,7 @@ export function useNearbyRiders(
                     lat: String(lat),
                     lng: String(lng),
                 });
+                if (vehicle) qs.set('vehicle', vehicle);
                 const res = await fetch(`/book/nearby-riders?${qs}`, {
                     headers: { Accept: 'application/json' },
                     signal: ctrl.signal,
@@ -61,7 +64,7 @@ export function useNearbyRiders(
             clearInterval(timer);
             document.removeEventListener('visibilitychange', onVisible);
         };
-    }, [service, lat, lng]);
+    }, [service, lat, lng, vehicle]);
 
     return data;
 }

@@ -176,6 +176,7 @@ const EMPTY_FORM: Form = {
     recipient_phone: '',
     item_description: '',
     package_size: '',
+    delivery_vehicle: 'two_wheel',
     pickup_location: '',
     destination: '',
     pickup_lat: null,
@@ -707,6 +708,7 @@ function ServiceSummary({ data, info }: { data: Form; info: ServiceInfo }) {
               ['Contact number', data.recipient_phone.trim()],
               ['Item', data.item_description.trim()],
               ['Package size', PACKAGE_SIZE_LABEL[data.package_size] ?? '—'],
+              ['Delivery vehicle', data.package_size === 'large' || data.delivery_vehicle === 'four_wheel' ? 'Car' : 'Motorcycle'],
           ]
         : [['Passengers', String(data.passenger_count)]];
 
@@ -776,7 +778,19 @@ export default function CustomerBook({
             ? { lat: data.destination_lat, lng: data.destination_lng }
             : null;
 
-    const nearby = useNearbyRiders(service, pickup);
+    // A Large package always goes by car, whatever was chosen before.
+    const deliveryVehicle = delivery
+        ? data.package_size === 'large'
+            ? 'four_wheel'
+            : data.delivery_vehicle || 'two_wheel'
+        : null;
+    useEffect(() => {
+        if (delivery && data.package_size === 'large' && data.delivery_vehicle !== 'four_wheel') {
+            setData((d) => ({ ...d, delivery_vehicle: 'four_wheel' }));
+        }
+    }, [delivery, data.package_size, data.delivery_vehicle, setData]);
+
+    const nearby = useNearbyRiders(service, pickup, deliveryVehicle);
     const fareState = useFareQuote(pickup, destination, service);
     const quote = fareState.quote;
 

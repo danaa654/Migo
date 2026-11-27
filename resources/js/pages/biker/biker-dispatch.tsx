@@ -26,6 +26,7 @@ type Offer = {
     passenger_count: number | null;
     item_description: string | null;
     package_size: string | null;
+    delivery_vehicle: string | null;
     distance_to_pickup: number;
     estimated_pickup_time: number;
     pickup_location: string;
@@ -44,6 +45,7 @@ type Active = {
     recipient_phone: string | null;
     item_description: string | null;
     package_size: string | null;
+    delivery_vehicle: string | null;
     reference: string | null;
     status: string;
     pickup_location: string;
@@ -595,6 +597,7 @@ export default function BikerDispatch({ account, notifications }: Props) {
                                         <dd>
                                             {a.item_description ?? '—'}
                                             {a.package_size ? ` · ${a.package_size}` : ''}
+                                            {a.delivery_vehicle ? ` · by ${a.delivery_vehicle === 'four_wheel' ? 'car' : 'motorcycle'}` : ''}
                                         </dd>
                                     </div>
                                 </>
@@ -840,7 +843,7 @@ export default function BikerDispatch({ account, notifications }: Props) {
                                                         {o.service_label}
                                                         {o.service_type === 'MIGODALA'
                                                             ? o.item_description
-                                                                ? ` · ${o.item_description}${o.package_size ? ` (${o.package_size})` : ''}`
+                                                                ? ` · ${o.item_description}${o.package_size ? ` (${o.package_size})` : ''}${o.delivery_vehicle ? ` · by ${o.delivery_vehicle === 'four_wheel' ? 'car' : 'motorcycle'}` : ''}`
                                                                 : ''
                                                             : o.passenger_count
                                                               ? ` · ${o.passenger_count} passenger${o.passenger_count === 1 ? '' : 's'}`

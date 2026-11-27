@@ -1,4 +1,4 @@
-import { Minus, Plus } from 'lucide-react';
+import { Bike, Car, Minus, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ServiceInfo } from '@/lib/services';
 import { PACKAGE_SIZE_LABEL } from '@/lib/services';
@@ -10,6 +10,8 @@ export type ServiceData = {
     recipient_phone: string;
     item_description: string;
     package_size: string;
+    /** MigoDala only: 'two_wheel' (motorcycle) or 'four_wheel' (car). A Large package is always a car. */
+    delivery_vehicle: string;
 };
 type Errors = Partial<Record<keyof ServiceData, string>>;
 
@@ -65,6 +67,13 @@ export default function ServiceFields({
     });
 
     if (service.is_delivery) {
+        const large = data.package_size === 'large';
+        const vehicle = large ? 'four_wheel' : data.delivery_vehicle || 'two_wheel';
+        const vehicles = [
+            { key: 'two_wheel', label: 'Motorcycle', hint: 'Small and medium items', Icon: Bike, disabled: large },
+            { key: 'four_wheel', label: 'Car', hint: 'Large or bulky items', Icon: Car, disabled: false },
+        ];
+
         return (
             <div className="grid gap-4 sm:grid-cols-2">
                 <Field id="recipient_name" label="Recipient name" error={errors.recipient_name}>
@@ -120,7 +129,11 @@ export default function ServiceFields({
                                     type="button"
                                     role="radio"
                                     aria-checked={on}
-                                    onClick={() => onChange('package_size', k)}
+                                    onClick={() => {
+                                        onChange('package_size', k);
+                                        // A large package does not fit on a motorcycle: switch to a car automatically.
+                                        if (k === 'large') onChange('delivery_vehicle', 'four_wheel');
+                                    }}
                                     className={`rounded-xl border px-3 py-2 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-m-accent ${
                                         on
                                             ? 'border-m-forest bg-m-forest text-white'
@@ -140,6 +153,43 @@ export default function ServiceFields({
                             {errors.package_size}
                         </p>
                     )}
+                </fieldset>
+                <fieldset className="sm:col-span-2">
+                    <legend className="mb-1 text-sm font-semibold text-m-ink">Delivery vehicle</legend>
+                    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-describedby="delivery_vehicle-hint">
+                        {vehicles.map(({ key, label, hint, Icon, disabled }) => {
+                            const on = vehicle === key;
+
+                            return (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={on}
+                                    disabled={disabled}
+                                    onClick={() => onChange('delivery_vehicle', key)}
+                                    className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-m-accent disabled:cursor-not-allowed disabled:opacity-50 ${
+                                        on
+                                            ? 'border-m-forest bg-m-forest text-white'
+                                            : 'border-m-line2 bg-m-card text-m-body hover:bg-m-mint'
+                                    }`}
+                                >
+                                    <Icon className="size-5 shrink-0" aria-hidden />
+                                    <span>
+                                        <span className="block text-sm font-semibold">{label}</span>
+                                        <span className={`block text-[11px] leading-tight ${on ? 'text-white/80' : 'text-m-muted'}`}>
+                                            {hint}
+                                        </span>
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <p id="delivery_vehicle-hint" className="mt-1 text-xs text-m-muted">
+                        {large
+                            ? 'Large packages are delivered by car, so Car is selected for you.'
+                            : 'Your delivery is only offered to riders with the vehicle you choose.'}
+                    </p>
                 </fieldset>
                 <div className="sm:col-span-2">
                     <Field id="notes" label="Delivery notes" optional error={errors.notes}>

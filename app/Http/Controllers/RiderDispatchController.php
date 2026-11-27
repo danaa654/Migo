@@ -47,6 +47,7 @@ class RiderDispatchController extends Controller
                 'passenger_count' => $o->booking->passenger_count,
                 'item_description' => $o->booking->item_description,
                 'package_size' => $o->booking->package_size,
+                'delivery_vehicle' => $o->booking->service()->isDelivery() ? $o->booking->vehicleType()->value : null,
                 'distance_to_pickup' => $o->distance_to_pickup,
                 'estimated_pickup_time' => $o->estimated_pickup_time,
                 'pickup_location' => $o->booking->pickup_location,
@@ -81,6 +82,7 @@ class RiderDispatchController extends Controller
                 // Delivery details (MigoDala) are revealed only after this rider has been assigned.
                 'recipient_name' => $active->recipient_name, 'recipient_phone' => $active->recipient_phone,
                 'item_description' => $active->item_description, 'package_size' => $active->package_size,
+                'delivery_vehicle' => $active->service()->isDelivery() ? $active->vehicleType()->value : null,
                 'pickup_location' => $active->pickup_location, 'destination' => $active->destination,
                 'pickup_lat' => $active->pickup_lat, 'pickup_lng' => $active->pickup_lng,
                 'destination_lat' => $active->destination_lat, 'destination_lng' => $active->destination_lng,

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\BookingStatus;
 use App\Enums\ServiceType;
+use App\Enums\VehicleType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,7 +24,7 @@ class Booking extends Model
     protected $fillable = ['passenger_id', 'rider_id', 'pickup_location', 'destination', 'booking_status', 'booking_date',
         'pickup_lat', 'pickup_lng', 'destination_lat', 'destination_lng', 'booking_reference', 'estimated_distance',
         'estimated_duration', 'estimated_fare', 'requested_at', 'service_type', 'passenger_count', 'notes', 'recipient_name',
-        'recipient_phone', 'item_description', 'package_size'];
+        'recipient_phone', 'item_description', 'package_size', 'delivery_vehicle'];
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -44,6 +45,12 @@ class Booking extends Model
     public function service(): ServiceType
     {
         return $this->service_type ?? ServiceType::MigoMoto;
+    }
+
+    /** The vehicle this booking needs: a MigoDala delivery uses the vehicle the customer chose, everything else the service default. */
+    public function vehicleType(): VehicleType
+    {
+        return $this->service()->vehicleFor($this->package_size, $this->delivery_vehicle);
     }
 
     public function passenger(): BelongsTo

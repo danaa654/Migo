@@ -7,6 +7,7 @@ use App\Enums\DispatchEventType as E;
 use App\Enums\OfferStatus;
 use App\Enums\RiderAvailabilityStatus;
 use App\Enums\ServiceType;
+use App\Enums\VehicleType;
 use App\Events\DispatchEventOccurred as Raise;
 use App\Models\Booking;
 use App\Models\BookingStatusHistory;
@@ -129,8 +130,11 @@ class DispatchService
             throw new DispatchException('invalid_delivery', 'Recipient name, recipient contact number, item description and package size are required for a delivery.');
         }
 
+        // Large packages always go by car; otherwise the customer's choice (motorcycle when none was sent).
+        $vehicle = $service->vehicleFor($size, $d['delivery_vehicle'] ?? null);
+
         return ['passenger_count' => null, 'notes' => $notes, 'recipient_name' => $name, 'recipient_phone' => PhilippinePhone::toLocal($phone),
-            'item_description' => mb_substr($item, 0, 255), 'package_size' => $size];
+            'item_description' => mb_substr($item, 0, 255), 'package_size' => $size, 'delivery_vehicle' => $vehicle->value];
     }
 
     /** Moves a PENDING booking into SEARCHING_FOR_RIDER and sends the first round of offers. */
@@ -261,7 +265,7 @@ class DispatchService
      *
      * @return \Illuminate\Database\Eloquent\Builder<Rider>
      */
-    public function eligibleRiders(ServiceType $service, int $freshSeconds)
+    public function eligibleRiders(ServiceType $service, int $freshSeconds, ?VehicleType $vehicle = null)
     {
         return Rider::query()
             ->join('rider_availability as a', 'a.rider_id', '=', 'riders.id')
@@ -274,7 +278,7 @@ class DispatchService
             ->when(app(\App\Services\Subscriptions\SubscriptionService::class)->required(), fn ($q) => $q->whereExists(fn ($s) => $s
                 ->select(DB::raw(1))->from('rider_subscriptions as rs')->whereColumn('rs.rider_id', 'riders.id')
                 ->whereIn('rs.status', ['active', 'scheduled'])->where('rs.starts_at', '<=', now())->where('rs.expires_at', '>', now())))
-            ->where('riders.vehicle_type', $service->vehicleType()->value) // MigoCars -> 4 wheels; MigoMoto / MigoDala -> 2 wheels
+            ->where('riders.vehicle_type', ($vehicle ?? $service->vehicleType())->value) // MigoCars -> 4 wheels; MigoMoto -> 2 wheels; MigoDala -> the vehicle the customer chose
             ->where('a.is_online', true)
             ->where('a.availability_status', RiderAvailabilityStatus::OnlineAvailable->value)
             ->where('l.last_location_update', '>=', now()->subSeconds($freshSeconds))
@@ -297,7 +301,7 @@ class DispatchService
         $dLat = $radiusKm / 111.32;
         $dLng = $radiusKm / (111.32 * max(0.01, cos(deg2rad($lat))));
 
-        $candidates = $this->eligibleRiders($b->service(), $fresh)
+        $candidates = $this->eligibleRiders($b->service(), $fresh, $b->vehicleType())
             ->whereBetween('l.latitude', [$lat - $dLat, $lat + $dLat])
             ->whereBetween('l.longitude', [$lng - $dLng, $lng + $dLng])
             ->whereNotIn('riders.id', RiderBookingOffer::where('booking_id', $b->id)->select('rider_id'))

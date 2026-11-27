@@ -45,6 +45,22 @@ enum ServiceType: string
         return $this === self::MigoCars ? VehicleType::FourWheel : VehicleType::TwoWheel;
     }
 
+    /**
+     * The vehicle a booking needs. Rides use the service's vehicle. A MigoDala delivery uses the vehicle the customer chose
+     * (motorcycle by default), except a Large package, which always needs a car.
+     */
+    public function vehicleFor(?string $packageSize, ?string $chosen): VehicleType
+    {
+        if (! $this->isDelivery()) {
+            return $this->vehicleType();
+        }
+        if ($packageSize === 'large') {
+            return VehicleType::FourWheel;
+        }
+
+        return VehicleType::tryFrom((string) $chosen) ?? VehicleType::TwoWheel;
+    }
+
     /** Seats for passengers (0 for a delivery). Admin-editable through dispatch settings. */
     public function maxPassengers(): int
     {

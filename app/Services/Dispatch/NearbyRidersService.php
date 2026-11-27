@@ -3,6 +3,7 @@
 namespace App\Services\Dispatch;
 
 use App\Enums\ServiceType;
+use App\Enums\VehicleType;
 use App\Models\DispatchSetting;
 use Illuminate\Support\Facades\Cache;
 
@@ -22,22 +23,23 @@ class NearbyRidersService
     public function __construct(private readonly DispatchService $dispatch) {}
 
     /** @return array{count: int, eta_minutes: ?int, radius_km: float, riders: list<array{lat: float, lng: float}>} */
-    public function around(ServiceType $service, float $lat, float $lng): array
+    public function around(ServiceType $service, float $lat, float $lng, ?VehicleType $vehicle = null): array
     {
         // Cache per service and ~1 km area for a few seconds so many customers cost one query, not one each.
-        $key = sprintf('nearby:%s:%.2f:%.2f', $service->value, $lat, $lng);
+        $vehicle ??= $service->vehicleType();
+        $key = sprintf('nearby:%s:%s:%.2f:%.2f', $service->value, $vehicle->value, $lat, $lng);
 
-        return Cache::remember($key, 8, fn () => $this->compute($service, $lat, $lng));
+        return Cache::remember($key, 8, fn () => $this->compute($service, $lat, $lng, $vehicle));
     }
 
-    private function compute(ServiceType $service, float $lat, float $lng): array
+    private function compute(ServiceType $service, float $lat, float $lng, VehicleType $vehicle): array
     {
         $radiusKm = max(0.5, (float) DispatchSetting::get('nearby_radius_km', '3'));
         $fresh = max(1, (int) DispatchSetting::get('location_freshness_seconds', '60'));
         $dLat = $radiusKm / 111.32;
         $dLng = $radiusKm / (111.32 * max(0.01, cos(deg2rad($lat))));
 
-        $rows = $this->dispatch->eligibleRiders($service, $fresh)
+        $rows = $this->dispatch->eligibleRiders($service, $fresh, $vehicle)
             ->whereBetween('l.latitude', [$lat - $dLat, $lat + $dLat])
             ->whereBetween('l.longitude', [$lng - $dLng, $lng + $dLng])
             ->limit(200)
