@@ -12,6 +12,7 @@ use App\Http\Controllers\BikerAccreditationController;
 use App\Http\Controllers\BikerComplaintController;
 use App\Http\Controllers\BikerDashboardController;
 use App\Http\Controllers\BikerDocumentController;
+use App\Http\Controllers\BikerProfileController;
 use App\Http\Controllers\BikerServiceRequestController;
 use App\Http\Controllers\CustomerAuth\CustomerPhoneController;
 use App\Http\Controllers\CustomerAuth\EmailOtpController;
@@ -135,6 +136,14 @@ Route::middleware(['auth', 'role:biker'])->prefix('biker')->group(function () {
 
     // Read-only accreditation progress for the signed-in biker. Riders cannot change any accreditation status.
     Route::get('accreditation', BikerAccreditationController::class)->name('biker.accreditation');
+
+    // The rider's own profile: contact details, profile photo (what passengers see) and password. Open to every rider,
+    // accredited or not. Accreditation data stays read-only here.
+    Route::get('profile', [BikerProfileController::class, 'edit'])->name('biker.profile');
+    Route::patch('profile', [BikerProfileController::class, 'update'])->middleware('throttle:20,1')->name('biker.profile.update');
+    Route::put('profile/password', [BikerProfileController::class, 'updatePassword'])->middleware('throttle:6,1')->name('biker.profile.password');
+    Route::post('profile/photo', [BikerProfileController::class, 'updatePhoto'])->middleware('throttle:10,1')->name('biker.profile.photo');
+    Route::delete('profile/photo', [BikerProfileController::class, 'removePhoto'])->middleware('throttle:10,1')->name('biker.profile.photo.remove');
 
     // The rider's own submitted documents (view only). No rider id in the URL: it is always the signed-in rider's files.
     Route::get('documents/{type}', BikerDocumentController::class)->whereIn('type', array_keys(\App\Support\RiderDocuments::TYPES))->middleware('throttle:60,1')->name('biker.documents');

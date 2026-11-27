@@ -53,6 +53,8 @@ class HandleInertiaRequests extends Middleware
             'admin' => fn () => ($p = $user?->adminProfile) ? ['full_name' => $p->full_name, 'email' => $p->email, 'role' => $p->role, 'role_label' => $p->roleLabel(), 'areas' => $p->areas()] : null,
             // Rider sidebar / dashboard: the plan the rider currently has (paid first, then free trial). Null for non-riders.
             'bikerSubscription' => fn () => $this->bikerSubscription($user),
+            // Rider sidebar: URL of the photo the rider shows (avatar, else registration selfie). Null for non-riders / no photo.
+            'bikerAvatar' => fn () => ($p = $user?->rider?->displayPhotoPath()) ? '/storage/'.ltrim($p, '/') : null,
             'adminNotifications' => fn () => $user?->adminProfile ? $this->adminNotifications($user->adminProfile) : null,
         ];
     }

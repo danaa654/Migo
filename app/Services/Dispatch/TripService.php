@@ -238,7 +238,7 @@ class TripService
         $stats = BookingRating::where('rated_rider_id', $rider->id)->where('rater_type', 'passenger')->selectRaw('avg(rating) as a, count(*) as c')->first();
         $out['rider'] = [
             'name' => $rider->full_name,
-            'photo_url' => $rider->profile_picture ? asset('storage/'.ltrim($rider->profile_picture, '/')) : null,
+            'photo_url' => $rider->displayPhotoPath() ? asset('storage/'.ltrim($rider->displayPhotoPath(), '/')) : null,
             'rating' => $stats && $stats->c ? round((float) $stats->a, 1) : null, 'rating_count' => (int) ($stats->c ?? 0),
             'plate' => $rider->motorcycle_plate_number, 'vehicle_type' => $rider->vehicle_type?->value ?? null,
             'phone' => $b->booking_status === 'completed' ? null : $rider->phone,

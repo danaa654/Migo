@@ -28,7 +28,7 @@ class Rider extends Model
     public const ACCOUNT_STATUSES = ['active', 'inactive', 'suspended'];
 
     protected $fillable = [
-        'user_id', 'full_name', 'email', 'phone', 'address', 'profile_picture',
+        'user_id', 'full_name', 'email', 'phone', 'address', 'profile_picture', 'avatar_path',
         'license_number', 'license_expiry', 'motorcycle_plate_number', 'vehicle_type', 'application_status',
         'account_status', 'rejection_reason', 'suspension_reason', 'reviewed_at', 'reviewed_by',
         'license_document', 'registration_document', 'official_receipt', 'nbi_clearance',
@@ -45,6 +45,12 @@ class Rider extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** The photo shown to passengers and in the sidebar: the rider's chosen avatar, else the registration selfie. */
+    public function displayPhotoPath(): ?string
+    {
+        return $this->avatar_path ?: $this->profile_picture;
     }
 
     public function isApproved(): bool

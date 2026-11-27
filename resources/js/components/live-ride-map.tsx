@@ -16,10 +16,13 @@ export default function LiveRideMap({
     pickup,
     destination,
     rider,
+    wheelZoom = false,
 }: {
     pickup: Point | null;
     destination: Point | null;
     rider: Point | null;
+    /** true: the mouse wheel always zooms the map (rider screens). false: wheel zoom turns on after a click (default). */
+    wheelZoom?: boolean;
 }) {
     const el = useRef<HTMLDivElement>(null);
     const map = useRef<L.Map | null>(null);
@@ -29,13 +32,15 @@ export default function LiveRideMap({
 
     useEffect(() => {
         if (!el.current) return;
-        const m = L.map(el.current, { scrollWheelZoom: false }).setView(
+        const m = L.map(el.current, { scrollWheelZoom: wheelZoom }).setView(
             pickup ? [pickup.lat, pickup.lng] : [10.2092, 123.7589],
             15,
         );
         // Wheel zoom turns on after a click on the map and off when the mouse leaves, so scrolling the page never gets stuck on it.
-        m.on('click', () => m.scrollWheelZoom.enable());
-        m.on('mouseout', () => m.scrollWheelZoom.disable());
+        if (!wheelZoom) {
+            m.on('click', () => m.scrollWheelZoom.enable());
+            m.on('mouseout', () => m.scrollWheelZoom.disable());
+        }
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution:

@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     CalendarDays,
     ClipboardList,
@@ -26,7 +26,7 @@ type Props = {
     account: { name: string; email: string };
     /** Unlocks the Ride requests / Service requests links (accredited riders only). */
     canBook?: boolean;
-    active?: 'dashboard' | 'dispatch' | 'requests' | 'complaints' | 'subscription';
+    active?: 'dashboard' | 'dispatch' | 'requests' | 'complaints' | 'subscription' | 'profile';
     /** Notifications for the bell in the top bar. */
     notifications?: Notifications;
     /** Accreditation progress shown at the bottom of the sidebar. */
@@ -65,16 +65,21 @@ export default function BikerShell({
     children,
 }: Props) {
     const sub = useBikerSubscription();
+    // Photo the rider chose (else the registration selfie). Shared by HandleInertiaRequests as "bikerAvatar".
+    const avatar = (usePage().props as unknown as { bikerAvatar?: string | null }).bikerAvatar ?? null;
+    const [avatarFailed, setAvatarFailed] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
     const [drawer, setDrawer] = useState(false);
     const initial = account.name.trim().charAt(0).toUpperCase() || 'B';
-    const title = NAV.find((n) => n.key === active)?.label ?? 'Dashboard';
+    const title = active === 'profile' ? 'My profile' : (NAV.find((n) => n.key === active)?.label ?? 'Dashboard');
     const today = new Date().toLocaleDateString('en-PH', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
     });
+
+    useEffect(() => setAvatarFailed(false), [avatar]);
 
     // Every Biker page mounts its own shell, so remember the choice between pages (browser storage can be unavailable).
     useEffect(() => {
@@ -242,10 +247,27 @@ export default function BikerShell({
                             </div>
                         )}
 
-                        <div className={`flex items-center gap-3 ${collapsed ? 'lg:justify-center' : ''}`} title={`${account.name} (${account.email})`}>
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-m-solid text-xs font-semibold text-white" aria-hidden>
-                                {initial}
-                            </span>
+                        <Link
+                            href="/biker/profile"
+                            onClick={() => setDrawer(false)}
+                            aria-current={active === 'profile' ? 'page' : undefined}
+                            title={`My profile: ${account.name} (${account.email})`}
+                            className={`flex items-center gap-3 rounded-lg p-1 transition-colors hover:bg-[var(--b-mint)]/60 ${ring} ${
+                                active === 'profile' ? 'bg-[var(--b-mint)]/90' : ''
+                            } ${collapsed ? 'lg:justify-center' : ''}`}
+                        >
+                            {avatar && !avatarFailed ? (
+                                <img
+                                    src={avatar}
+                                    alt=""
+                                    onError={() => setAvatarFailed(true)}
+                                    className="size-9 shrink-0 rounded-full object-cover ring-1 ring-[var(--b-line)]"
+                                />
+                            ) : (
+                                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-m-solid text-xs font-semibold text-white" aria-hidden>
+                                    {initial}
+                                </span>
+                            )}
                             <span className={`min-w-0 leading-tight ${hideWhenCollapsed}`}>
                                 <span className="block truncate text-[13px] font-bold text-[var(--b-ink)]" title={account.name}>
                                     {account.name}
@@ -254,7 +276,7 @@ export default function BikerShell({
                                     {account.email}
                                 </span>
                             </span>
-                        </div>
+                        </Link>
                         <button
                             type="button"
                             onClick={logout}

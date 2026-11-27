@@ -700,6 +700,7 @@ export default function BikerDispatch({ account, notifications }: Props) {
                                     : null
                             }
                             rider={state?.location ?? null}
+                            wheelZoom
                         />
                     </section>
                 )}
